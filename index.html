@@ -667,6 +667,7 @@ function App(){
         if(!r.ok) throw new Error("http "+r.status);
         const j=await r.json(); const out={};
         (Array.isArray(j)?j:[]).forEach(x=>{ if(x&&x.equipment&&x.isupcomingoutage!=="Y") out[x.equipment]=x; });
+        try{ const fk=new URLSearchParams(location.search).get("fakeout"); if(fk) fk.split(",").forEach(id=>{ id=id.trim().toUpperCase(); if(id) out[id]={equipment:id,reason:"TEST (fake outage)",serving:"test only",estimatedreturntoservice:"",isupcomingoutage:"N"}; }); }catch(e){}
         if(!dead) setLive({st:"ok",at:Date.now(),out});
       }catch(e){ if(!dead) setLive(p=>({...p,st:p.at?"stale":"err"})); }
     };
@@ -832,7 +833,7 @@ function App(){
                 <div className="flex gap-2.5">
                   <span className="text-xl"><Ic n="bell"/></span>
                   <div className="flex-1">
-                    <p className="text-[13px] font-bold">{t.alertTitle(lr.b)}</p>
+                    <p className="text-[13px] font-bold"><span className="inline-block align-middle mr-1.5 text-[12px] font-bold bg-white/25 rounded-full px-2 py-0.5">DEMO</span>{t.alertTitle(lr.b)}</p>
                     <p className="text-[12px] text-red-100 mt-0.5">{alt?t.alertBody:t.noAlt}</p>
                   </div>
                 </div>
