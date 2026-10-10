@@ -1,0 +1,29 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MTA feed test</title>
+<style>body{font:14px/1.45 -apple-system,system-ui,sans-serif;margin:16px;background:#f6f7f5;color:#1f2a24}h1{font-size:18px}pre{white-space:pre-wrap;word-break:break-all;background:#fff;border:1px solid #d9ddd8;border-radius:10px;padding:10px;font-size:12px}.ok{color:#1f7a55;font-weight:700}.bad{color:#b42318;font-weight:700}</style></head><body>
+<h1>MTA elevator feed test</h1><p>Opening this page runs the checks below. Take a screenshot of the whole result and send it back.</p><div id="out"></div>
+<script>
+const URLS=[
+ "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fnyct_ene.json",
+ "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fnyct_ene_equipments.json",
+ "https://web.mta.info/developers/data/nyct/nyct_ene.json"
+];
+const out=document.getElementById("out");
+function add(h){const d=document.createElement("div");d.innerHTML=h;out.appendChild(d);}
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+(async()=>{
+ for(const u of URLS){
+  add("<h3>"+esc(u)+"</h3>");
+  try{
+   const r=await fetch(u);
+   const t=await r.text();
+   let info="status "+r.status+" · type "+(r.headers.get("content-type")||"?")+" · "+t.length+" chars";
+   let shape="";
+   try{const j=JSON.parse(t);shape=Array.isArray(j)?"JSON array, "+j.length+" items":"JSON object, keys: "+Object.keys(j).slice(0,12).join(", ");}catch(e){shape="not JSON";}
+   add('<p class="ok">Reachable from this page ✔</p><p>'+esc(info)+'<br>'+esc(shape)+'</p><pre>'+esc(t.slice(0,700))+'</pre>');
+  }catch(e){
+   add('<p class="bad">Blocked or failed: '+esc(e&&e.message||e)+'</p>');
+  }
+ }
+ add("<p>Done.</p>");
+})();
+</script></body></html>
