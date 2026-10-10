@@ -183,7 +183,7 @@ const DESTS = [
 ];
 
 const SHORT = {"American Museum of Natural History":"Natural History Museum","Church Av, Brooklyn":"Church Av"};
-DESTS.forEach(d=>d.routes.forEach(r=>{ r.follow=true; }));
+DESTS.forEach(d=>d.routes.forEach(r=>{ r.follow=true; r.progress=true; }));
 
 // --- Place search layer (mock). Swap searchPlaces() for a real Places API call later; the UI only needs {name, addr, c}.
 const PLACES = [
