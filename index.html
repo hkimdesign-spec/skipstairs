@@ -657,7 +657,7 @@ function App(){
   const [focus,setFocus] = useState(false);
   const [tab,setTab] = useState("in");
   const [mode,setMode] = useState("trip");
-  const [live,setLive] = useState({st:"loading",at:null,out:{}});
+  const [live,setLive] = useState({st:"loading",at:null,out:{},list:[]});
   useEffect(()=>{
     let dead=false;
     const go=async()=>{
@@ -665,10 +665,10 @@ function App(){
         const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),12000);
         const r=await fetch(FEED,{signal:ctl.signal,cache:"no-store"}); clearTimeout(tm);
         if(!r.ok) throw new Error("http "+r.status);
-        const j=await r.json(); const out={};
-        (Array.isArray(j)?j:[]).forEach(x=>{ if(x&&x.equipment&&x.isupcomingoutage!=="Y") out[x.equipment]=x; });
-        try{ const fk=new URLSearchParams(location.search).get("fakeout"); if(fk) fk.split(",").forEach(id=>{ id=id.trim().toUpperCase(); if(id) out[id]={equipment:id,reason:"TEST (fake outage)",serving:"test only",estimatedreturntoservice:"",isupcomingoutage:"N"}; }); }catch(e){}
-        if(!dead) setLive({st:"ok",at:Date.now(),out});
+        const j=await r.json(); const out={}; const list=[];
+        (Array.isArray(j)?j:[]).forEach(x=>{ if(x&&x.equipment&&x.isupcomingoutage!=="Y"){ out[x.equipment]=x; list.push(x); } });
+        try{ const fk=new URLSearchParams(location.search).get("fakeout"); if(fk) fk.split(",").forEach(id=>{ id=id.trim().toUpperCase(); if(id) out[id]={equipment:id,reason:"TEST (fake outage)",serving:"test only",estimatedreturntoservice:"",isupcomingoutage:"N"}; list.push(out[id]); }); }catch(e){}
+        if(!dead) setLive({st:"ok",at:Date.now(),out,list});
       }catch(e){ if(!dead) setLive(p=>({...p,st:p.at?"stale":"err"})); }
     };
     go();
@@ -741,7 +741,12 @@ function App(){
   const liveBar = (()=>{ const mins=live.at?Math.floor((Date.now()-live.at)/60000):0; const good=live.st==="ok"; const bad=live.st==="err"||live.st==="stale";
     return (<div className={"flex items-center gap-2 text-[12px] font-semibold px-1 "+(bad?"text-amber-800":"text-slate-500")}><span className={"w-2 h-2 rounded-full shrink-0 "+(good?"bg-green-500 pulse-dot":bad?"bg-amber-500":"bg-slate-300")}></span><span className="leading-snug">{live.st==="loading"?"…":live.st==="err"?lv.err:live.st==="stale"?lv.stale:lv.ok+" · "+(mins<1?t.now:t.ago(mins))}</span></div>); })();
   const liveOn = live.st==="ok"||live.st==="stale";
-  const routeOuts = (route&&liveOn) ? [...new Set(route.steps.map(x=>x.st).filter(Boolean))].map(id=>STATIONS.find(x=>x.id===id)).filter(Boolean).map(S=>({S,n:(S.els||[]).filter(id=>LIVE[id]).length})).filter(o=>o.n>0) : [];
+  const normN=x=>String(x||"").toLowerCase().replace(/\s+/g," ").trim();
+  const routeOuts = (route&&liveOn) ? (()=>{ const names=new Set(); route.steps.forEach(x=>{ if(x.k==="ride"){ names.add(normN(x.a)); names.add(normN(x.b)); } if(x.k==="xf") names.add(normN(x.p)); if(x.st){ const S=STATIONS.find(y=>y.id===x.st); if(S) names.add(normN(S.name)); } });
+    const dests=new Set(route.steps.filter(x=>x.k==="ride").map(x=>normN(x.b))); const ls=[...(route.lines||[])].map(x=>String(x).toUpperCase());
+    const by={}; (live.list||[]).forEach(r=>{ const k=normN(r.station); const tn=String(r.trainno||"").toUpperCase(); if(names.has(k)&&(dests.has(k)||!tn||ls.some(l=>tn.includes(l)))){ (by[k]=by[k]||{S:{name:r.station},recs:[]}).recs.push(r); } });
+    STATIONS.forEach(S=>{ const k=normN(S.name); if(names.has(k)){ (S.els||[]).filter(id=>LIVE[id]).forEach(id=>{ const r=LIVE[id]; const g=(by[k]=by[k]||{S:{name:S.name},recs:[]}); if(!g.recs.includes(r)) g.recs.push(r); }); } });
+    return Object.values(by).map(o=>({...o,n:o.recs.length})); })() : [];
   const results = useMemo(()=>STATIONS.filter(s=>s.name.toLowerCase().includes(q.toLowerCase())),[q]);
 
   const routeSel = route ? (
@@ -860,7 +865,7 @@ function App(){
               {route && (
                 <div className={"flex items-center gap-2.5 rounded-2xl px-4 py-3 text-[13px] font-semibold "+((route.warn||rr||routeOuts.length)?"bg-amber-50 text-amber-800":"bg-white border border-slate-200 text-slate-700")}>
                   <span className={"w-2.5 h-2.5 rounded-full shrink-0 "+((route.warn||rr||routeOuts.length)?"bg-amber-500":"bg-green-500 pulse-dot")}></span>
-                  <span className="leading-snug"><Ic n={(route.warn||rr||routeOuts.length)?"alert":"check"} cls={(route.warn||rr||routeOuts.length)?"":"text-emerald-600"}/>{route.warn?t.warn:rr?t.noEntr:routeOuts.length?routeOuts.map(o=>lv.rout(o.n,SHORT[o.S.name]||o.S.name)).join(" · "):liveOn?lv.rok:t.routeOk(liftCount(route))}</span>
+                  <span className="leading-snug"><Ic n={(route.warn||rr||routeOuts.length)?"alert":"check"} cls={(route.warn||rr||routeOuts.length)?"":"text-emerald-600"}/>{route.warn?t.warn:rr?t.noEntr:routeOuts.length?routeOuts.map(o=>lv.rout(o.n,SHORT[o.S.name]||o.S.name)).join(" · "):liveOn?lv.rok:t.routeOk(liftCount(route))}{routeOuts.map(o=>o.recs.map(r=>(<span key={r.equipment} className="block text-[12px] font-medium mt-1">{r.equipment} · {r.serving}{r.reason?" · "+r.reason:""}{r.estimatedreturntoservice?" → "+fmtEta(r.estimatedreturntoservice):""}</span>)))}</span>
                 </div>)}
               
               {route && !route.follow && (()=>{
