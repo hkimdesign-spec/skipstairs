@@ -214,6 +214,9 @@ const DESTS = [
 
 const SHORT = {"American Museum of Natural History":"Natural History Museum","Church Av, Brooklyn":"Church Av"};
 DESTS.forEach(d=>d.routes.forEach(r=>{ r.follow=true; r.progress=true; }));
+const DLL={"Whitney Museum": [40.7396, -74.0089], "Brooklyn Museum": [40.6712, -73.9636], "Times Square": [40.758, -73.9855], "Union Square": [40.7359, -73.9911], "Court Square": [40.7471, -73.9455], "Coney Island": [40.574, -73.978], "Church Av, Brooklyn": [40.644, -73.9797], "Penn Station": [40.7506, -73.9935], "Herald Square": [40.7497, -73.9877], "Central Park": [40.7681, -73.9819], "Yankee Stadium": [40.8296, -73.9262], "Prospect Park": [40.6617, -73.9627], "Grand Central Terminal": [40.7527, -73.9772]};
+DESTS.forEach(d=>d.routes.forEach(r=>{ const e=r.steps.find(x=>x.end); if(e&&DLL[d.name]) e.ll=DLL[d.name]; }));
+
 
 // --- Place search layer (mock). Swap searchPlaces() for a real Places API call later; the UI only needs {name, addr, c}.
 const PLACES = [
@@ -317,21 +320,21 @@ const LOC={
   FR:{finding:"Recherche de votre position…",near:(n,d)=>"Station d'exemple la plus proche : "+n+" · "+d,far:(n,d)=>"Aucune station d'exemple près de vous. La plus proche : "+n+" · "+d,denied:"La position est bloquée dans cette vue. Choisissez une station d'exemple :",unavail:"Position introuvable. Choisissez une station d'exemple :",view:"Infos station"}
 };
 const MAPL={en:"Walking directions",es:"Cómo llegar a pie",zh:"步行路线",ru:"Пешком до входа",bn:"হাঁটার পথ",fr:"Itinéraire à pied",ko:"도보 길찾기"};
-const mapUrl=(near,S)=>"https://www.google.com/maps/dir/?api=1&travelmode=walking&destination="+encodeURIComponent(near.ll?near.ll[0]+","+near.ll[1]:near.s+", "+(S.boro||"New York")+", NY");
+const mapUrl=(near,S,o)=>"https://www.google.com/maps/dir/?api=1&travelmode=walking"+(o?"&origin="+o[0]+","+o[1]:"")+"&destination="+encodeURIComponent(near.ll?near.ll[0]+","+near.ll[1]:near.s+", "+(S.boro||"New York")+", NY");
 function distM(a,b){ const R=6371000,r=Math.PI/180; const x=Math.sin((b[0]-a[0])*r/2)**2+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin((b[1]-a[1])*r/2)**2; return 2*R*Math.asin(Math.sqrt(x)); }
 function fmtD(m){ const ft=m*3.28084; return ft<1000?(Math.max(10,Math.round(ft/10)*10))+" ft":(m/1609.344).toFixed(1)+" mi"; }
 function walkMin(m){ return Math.max(1,Math.ceil(m*1.25/80)); } // straight-line x1.25 street detour, ~3 mph
 const OE={EN:"Other entrances",ES:"Otras entradas",ZH:"其他入口",RU:"Другие входы",BN:"অন্যান্য প্রবেশপথ",FR:"Autres entrées",KO:"다른 입구"};
 const GEO={
-  en:{use:"Use my location",sim:"Simulate arriving",hint:"Optional: we can suggest the next step when you're near the elevator.",wait:"Finding your location…",away:m=>"About "+m+" m from the elevator.",denied:"Location unavailable. Use the button below.",near:"You're at the elevator.",yes:"Yes, I'm here — next step"},
-  ko:{use:"내 위치 사용",sim:"도착 시뮬레이션",hint:"선택: 엘리베이터 근처에 오면 다음 단계를 제안해 드려요.",wait:"위치 확인 중…",away:m=>"엘리베이터까지 약 "+m+"m",denied:"위치를 사용할 수 없어요. 아래 버튼을 눌러 주세요.",near:"엘리베이터 앞이에요.",yes:"네, 도착했어요 — 다음 단계"},
-  es:{use:"Usar mi ubicación",sim:"Simular llegada",hint:"Opcional: sugerimos el siguiente paso cuando estés cerca del ascensor.",wait:"Buscando tu ubicación…",away:m=>"A unos "+m+" m del ascensor.",denied:"Ubicación no disponible. Usa el botón de abajo.",near:"Estás en el ascensor.",yes:"Sí, ya estoy aquí — siguiente"},
-  zh:{use:"使用我的位置",sim:"模拟到达",hint:"可选：靠近电梯时我们会建议进入下一步。",wait:"正在定位…",away:m=>"距电梯约 "+m+" 米",denied:"无法获取位置，请使用下方按钮。",near:"您已到电梯旁。",yes:"是的，我到了 — 下一步"},
-  ru:{use:"Использовать геопозицию",sim:"Имитировать прибытие",hint:"По желанию: предложим следующий шаг, когда вы будете у лифта.",wait:"Определяем местоположение…",away:m=>"Около "+m+" м до лифта.",denied:"Геопозиция недоступна. Нажмите кнопку ниже.",near:"Вы у лифта.",yes:"Да, я здесь — дальше"},
-  bn:{use:"আমার অবস্থান ব্যবহার করুন",sim:"পৌঁছানো সিমুলেট করুন",hint:"ঐচ্ছিক: লিফটের কাছে এলে পরের ধাপ প্রস্তাব করব।",wait:"অবস্থান খোঁজা হচ্ছে…",away:m=>"লিফট থেকে প্রায় "+m+" মি।",denied:"অবস্থান পাওয়া যায়নি। নিচের বোতাম ব্যবহার করুন।",near:"আপনি লিফটের কাছে।",yes:"হ্যাঁ, পৌঁছেছি — পরের ধাপ"},
-  fr:{use:"Utiliser ma position",sim:"Simuler l'arrivée",hint:"Facultatif : nous suggérons l'étape suivante quand vous êtes près de l'ascenseur.",wait:"Recherche de votre position…",away:m=>"À environ "+m+" m de l'ascenseur.",denied:"Position indisponible. Utilisez le bouton ci-dessous.",near:"Vous êtes à l'ascenseur.",yes:"Oui, j'y suis — étape suivante"}
+  en:{auto:d=>"Tracking your location · "+d+" away. This step completes by itself when you arrive.",manual:"Underground, GPS can't follow. Tap when you've done this step.",use:"Use my location",sim:"Simulate arriving",hint:"Optional: we can suggest the next step when you're near the elevator.",wait:"Finding your location…",away:m=>"About "+m+" m from the elevator.",denied:"Location unavailable. Use the button below.",near:"You're at the elevator.",yes:"Yes, I'm here — next step"},
+  ko:{auto:d=>"위치 추적 중 · "+d+" 남았어요. 도착하면 자동으로 넘어가요.",manual:"지하에서는 GPS가 안 잡혀요. 마치면 버튼을 눌러 주세요.",use:"내 위치 사용",sim:"도착 시뮬레이션",hint:"선택: 엘리베이터 근처에 오면 다음 단계를 제안해 드려요.",wait:"위치 확인 중…",away:m=>"엘리베이터까지 약 "+m+"m",denied:"위치를 사용할 수 없어요. 아래 버튼을 눌러 주세요.",near:"엘리베이터 앞이에요.",yes:"네, 도착했어요 — 다음 단계"},
+  es:{auto:d=>"Siguiendo tu ubicación · a "+d+". Este paso se completa solo al llegar.",manual:"Bajo tierra el GPS no funciona. Toca cuando termines este paso.",use:"Usar mi ubicación",sim:"Simular llegada",hint:"Opcional: sugerimos el siguiente paso cuando estés cerca del ascensor.",wait:"Buscando tu ubicación…",away:m=>"A unos "+m+" m del ascensor.",denied:"Ubicación no disponible. Usa el botón de abajo.",near:"Estás en el ascensor.",yes:"Sí, ya estoy aquí — siguiente"},
+  zh:{auto:d=>"正在跟踪您的位置 · 还有 "+d+"。到达后此步骤会自动完成。",manual:"地下没有 GPS 信号。完成此步骤后请点按按钮。",use:"使用我的位置",sim:"模拟到达",hint:"可选：靠近电梯时我们会建议进入下一步。",wait:"正在定位…",away:m=>"距电梯约 "+m+" 米",denied:"无法获取位置，请使用下方按钮。",near:"您已到电梯旁。",yes:"是的，我到了 — 下一步"},
+  ru:{auto:d=>"Отслеживаем вашу позицию · осталось "+d+". Шаг завершится сам, когда вы придёте.",manual:"Под землёй GPS не работает. Нажмите, когда выполните этот шаг.",use:"Использовать геопозицию",sim:"Имитировать прибытие",hint:"По желанию: предложим следующий шаг, когда вы будете у лифта.",wait:"Определяем местоположение…",away:m=>"Около "+m+" м до лифта.",denied:"Геопозиция недоступна. Нажмите кнопку ниже.",near:"Вы у лифта.",yes:"Да, я здесь — дальше"},
+  bn:{auto:d=>"আপনার অবস্থান ট্র্যাক হচ্ছে · "+d+" বাকি। পৌঁছালে ধাপটি নিজে থেকেই শেষ হবে।",manual:"ভূগর্ভে GPS কাজ করে না। এই ধাপ শেষ হলে বোতাম চাপুন।",use:"আমার অবস্থান ব্যবহার করুন",sim:"পৌঁছানো সিমুলেট করুন",hint:"ঐচ্ছিক: লিফটের কাছে এলে পরের ধাপ প্রস্তাব করব।",wait:"অবস্থান খোঁজা হচ্ছে…",away:m=>"লিফট থেকে প্রায় "+m+" মি।",denied:"অবস্থান পাওয়া যায়নি। নিচের বোতাম ব্যবহার করুন।",near:"আপনি লিফটের কাছে।",yes:"হ্যাঁ, পৌঁছেছি — পরের ধাপ"},
+  fr:{auto:d=>"Suivi de votre position · à "+d+". Cette étape se termine toute seule à l'arrivée.",manual:"Sous terre, le GPS ne fonctionne pas. Touchez quand vous avez terminé cette étape.",use:"Utiliser ma position",sim:"Simuler l'arrivée",hint:"Facultatif : nous suggérons l'étape suivante quand vous êtes près de l'ascenseur.",wait:"Recherche de votre position…",away:m=>"À environ "+m+" m de l'ascenseur.",denied:"Position indisponible. Utilisez le bouton ci-dessous.",near:"Vous êtes à l'ascenseur.",yes:"Oui, j'y suis — étape suivante"}
 };
-function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation}){
+function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin}){
   const rides=route.steps.filter(x=>x.k==="ride");
   const r0=rides[0]||{};
   const line=r0.l, dir=r0.dir;
@@ -342,27 +345,12 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation}){
   const [exp,setExp]=useState({});
   const firstRun=useRef(true);
   useEffect(()=>{ if(firstRun.current){ firstRun.current=false; return; } const el=document.getElementById("fs-"+cur); if(el&&el.scrollIntoView) el.scrollIntoView({behavior:"smooth",block:"start"}); },[cur]);
-  const [geo,setGeo]=useState("off"); // off | watching | denied | near
+  const [geo,setGeo]=useState("off"); // off | watching | denied
   const [gm,setGm]=useState(null);
   const watchId=useRef(null);
   const g=GEO[String(lang).toLowerCase()]||GEO.en;
   const stopW=()=>{ try{ if(watchId.current!=null && navigator.geolocation) navigator.geolocation.clearWatch(watchId.current); }catch(e){} watchId.current=null; };
   useEffect(()=>stopW,[]);
-  useEffect(()=>{ if(cur>0 && geo!=="off"){ stopW(); setGeo("off"); setGm(null); } },[cur]);
-  const startGeo=()=>{
-    if(!navigator.geolocation||!near.ll){ setGeo("denied"); return; }
-    setGeo("watching");
-    try{
-      watchId.current=navigator.geolocation.watchPosition(p=>{
-        const R=6371000,rad=Math.PI/180,la=near.ll[0],lo=near.ll[1];
-        const a=Math.sin((p.coords.latitude-la)*rad/2)**2+Math.cos(la*rad)*Math.cos(p.coords.latitude*rad)*Math.sin((p.coords.longitude-lo)*rad/2)**2;
-        const m=Math.round(2*R*Math.asin(Math.sqrt(a)));
-        setGm(m);
-        if(m<=50) setGeo("near");
-      },()=>{ stopW(); setGeo("denied"); },{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
-    }catch(e){ setGeo("denied"); }
-  };
-  useEffect(()=>{ if(prog && cur===0 && near.ll && geo==="off") startGeo(); },[cur,geo]);
   const corner=near.d?t.corner(near.s,t.dn[near.d]):near.s;
   const simAvail = S.ents.some(e=>e.chain&&e.chain.some(c=>c.sim));
   const items=[];
@@ -370,14 +358,14 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation}){
   route.steps.forEach((st,si)=>{
     if(st.k==="walk" && st.st && !st.end && !entDone){
       entDone=true;
-      items.push({key:"ent",title:t.go(corner),time:t.mn(st.m),body:(<>
+      items.push({key:"ent",geo:near.ll?{ll:near.ll,r:50}:null,title:t.go(corner),time:t.mn(st.m),body:(<>
         {near.photo && (
           <div className="relative rounded-xl overflow-hidden">
             <img src={near.photo} alt={near.s} className="w-full h-44 object-cover"/>
             {near.src==="own" && <div className="absolute top-2 left-2 text-[12px] font-bold rounded-full px-2.5 py-1 shadow bg-emerald-600 text-white"><Ic n="check"/>{t.srcOwn}</div>}
           </div>)}
         <p className="text-[13px] font-semibold text-slate-700"><Ic n="walk"/>{t.walkIn(near.ft,near.m)}</p>
-        <a href={mapUrl(near,S)} target="_blank" rel="noopener" className="flex items-center justify-center gap-2 min-h-[44px] rounded-xl bg-blue-50 text-blue-700 text-[13px] font-bold"><Ic n="pin" m=""/>{MAPL[String(lang).toLowerCase()]||MAPL.en} ↗</a>
+        <a href={mapUrl(near,S,origin)} target="_blank" rel="noopener" className="flex items-center justify-center gap-2 min-h-[48px] rounded-xl bg-blue-600 text-white text-[14px] font-bold shadow"><Ic n="pin" m=""/>{MAPL[String(lang).toLowerCase()]||MAPL.en} ↗</a>
         <SvRow e={near} lang={lang} hl={line}/>
         <div className="flex gap-2.5 bg-slate-50 rounded-xl p-3"><span className="text-lg"><Ic n="pin"/></span><p className="text-[13px] text-slate-700 leading-relaxed">{d.lm}</p></div>
         <button onClick={()=>goStation(S.id,"in")} className="min-h-[40px] text-[13px] font-bold text-slate-600 underline underline-offset-2"><Ic n="info"/>{t.view}</button>
@@ -392,7 +380,7 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation}){
         </>)});
       });
     } else if(st.k==="walk"){
-      items.push({key:"w"+si,title:t.go(st.p),time:t.mn(st.m),body:st.end?(<p className="text-[12.5px] text-slate-500"><Ic n="pin"/>{st.p}</p>):null});
+      items.push({key:"w"+si,geo:(st.end&&st.ll)?{ll:st.ll,r:150}:null,title:t.go(st.p),time:t.mn(st.m),body:st.end?(<p className="text-[12.5px] text-slate-500"><Ic n="pin"/>{st.p}</p>):null});
     } else if(st.k==="ride"){
       items.push({key:"r"+si,label:t.ride(st.l,st.a,st.b),title:(<><span className="inline-flex align-middle mr-1.5"><LineBadge l={st.l} size="sm"/></span>{t.ride(st.l,st.a,st.b)}</>),time:t.mn(st.m),body:st.car?(<>
         <span className="inline-block text-[12px] font-bold text-amber-900 bg-amber-100 rounded-full px-3 py-1">{t.carTxt(st.car,st.door)}</span>
@@ -417,6 +405,23 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation}){
       </>)});
     }
   });
+  const tgt=prog&&items[cur]?items[cur].geo:null;
+  const tk=tgt?tgt.ll.join(",")+"|"+cur:"";
+  useEffect(()=>{
+    stopW(); setGm(null);
+    if(!tgt){ setGeo("off"); return; }
+    if(typeof navigator==="undefined"||!navigator.geolocation){ setGeo("denied"); return; }
+    setGeo("watching");
+    const at=cur;
+    try{
+      watchId.current=navigator.geolocation.watchPosition(p=>{
+        const m=distM([p.coords.latitude,p.coords.longitude],tgt.ll);
+        setGm(m);
+        if(m<=tgt.r && (p.coords.accuracy||0)<=100){ stopW(); setCur(c=>c===at?at+1:c); }
+      },()=>{ stopW(); setGeo("denied"); },{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+    }catch(e){ setGeo("denied"); }
+    return stopW;
+  },[tk]);
   const N=items.length, fin=prog&&cur>=N;
   const lab=(it)=>typeof it.title==="string"?it.title:(it.label||"");
   return (
@@ -434,8 +439,10 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation}){
         return (
           <FStep key={it.key} id={"fs-"+i} n={i+1} title={it.title} time={it.time} last={i===N-1} state={state} expanded={!!exp[i]} onToggle={()=>setExp(x=>({...x,[i]:!x[i]}))}>
             {it.body}
-            {state==="cur" && i===0 && geo==="near" && <p className="text-[13px] font-bold text-emerald-800 bg-emerald-50 rounded-xl px-3 py-2"><Ic n="pin"/>{g.near}</p>}
-            {state==="cur" && <button onClick={()=>setCur(i+1)} className={"w-full min-h-[48px] rounded-xl bg-emerald-600 text-white text-[14px] font-bold "+(i===0&&geo==="near"?"ring-4 ring-amber-300":"")}>{i===N-1?t.arrivedBtn:t.doneNext}</button>}
+            {state==="cur" && it.geo && geo==="watching" && <p className="text-[12.5px] font-semibold text-emerald-800 bg-emerald-50 rounded-xl px-3 py-2"><Ic n="pin"/>{gm!=null?g.auto(fmtD(gm)):g.wait}</p>}
+            {state==="cur" && it.geo && geo==="denied" && <p className="text-[12.5px] text-slate-500"><Ic n="info"/>{g.denied}</p>}
+            {state==="cur" && !it.geo && prog && <p className="text-[12.5px] text-slate-500"><Ic n="info"/>{g.manual}</p>}
+            {state==="cur" && <button onClick={()=>setCur(i+1)} className="w-full min-h-[48px] rounded-xl bg-emerald-600 text-white text-[14px] font-bold">{i===N-1?t.arrivedBtn:t.doneNext}</button>}
           </FStep>);
       })}</ol>
       {fin && (
@@ -597,7 +604,7 @@ function App(){
       navigator.geolocation.getCurrentPosition(p=>{
         const me=[p.coords.latitude,p.coords.longitude];
         const best=STATIONS.filter(x=>x.pos).map(x=>({x,d:distM(me,x.pos)})).sort((a,b)=>a.d-b.d)[0];
-        setLoc({st:"ok",id:best.x.id,n:SHORT[best.x.name]||best.x.name,d:best.d,far:best.d>3000});
+        setLoc({st:"ok",me,id:best.x.id,n:SHORT[best.x.name]||best.x.name,d:best.d,far:best.d>3000});
       },e=>setLoc({st:e&&e.code===1?"denied":"unavail"}),{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
     }catch(e){ setLoc({st:"unavail"}); }
   };
@@ -790,7 +797,7 @@ function App(){
                 const S=STATIONS.find(x=>x.id===f.st);
                 const near=pickEnt(S,route,chainDown);
                 if(!near) return <NoEntranceCard t={t} S={S} setCd={chainDown?setChainDown:null}/>;
-                return <FollowAlong key={f.p+"|"+ri} t={t} S={S} near={near} lang={lang} route={route} cd={chainDown} setCd={setChainDown} goStation={goStation}/>;
+                return <FollowAlong key={f.p+"|"+ri} t={t} S={S} near={near} lang={lang} route={route} cd={chainDown} setCd={setChainDown} goStation={goStation} origin={from===null&&loc&&loc.st==="ok"&&loc.me?loc.me:null}/>;
               })()}
               {route && <p className="text-[12px] text-slate-400 px-1">{t.sample}</p>}
 
