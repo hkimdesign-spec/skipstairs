@@ -881,6 +881,7 @@ const INDOOR=[
 INDOOR.forEach(x=>{ FPK[x.n]=x.k; });
 const FPX={"dino": {"EN": "Dinosaurs & dioramas", "KO": "공룡 화석과 전시", "ES": "Dinosaurios y dioramas", "ZH": "恐龙与场景展", "RU": "Динозавры и диорамы", "BN": "ডাইনোসর ও ডায়োরামা", "FR": "Dinosaures et dioramas"}, "kidsmus": {"EN": "Hands-on kids' museum", "KO": "체험형 어린이 박물관", "ES": "Museo infantil interactivo", "ZH": "互动儿童博物馆", "RU": "Детский интерактивный музей", "BN": "শিশুদের হাতে-কলমে জাদুঘর", "FR": "Musée interactif pour enfants"}, "zoo": {"EN": "Neighborhood zoo", "KO": "동네 동물원", "ES": "Zoológico del barrio", "ZH": "社区动物园", "RU": "Небольшой зоопарк", "BN": "পাড়ার চিড়িয়াখানা", "FR": "Zoo de quartier"}, "pier": {"EN": "Waterfront playground", "KO": "물가 놀이터", "ES": "Parque infantil junto al agua", "ZH": "滨水游乐场", "RU": "Площадка у воды", "BN": "জলের ধারের খেলার মাঠ", "FR": "Aire de jeux au bord de l'eau"}, "bpark": {"EN": "Waterfront playgrounds", "KO": "물가 놀이터들", "ES": "Parques infantiles junto al agua", "ZH": "滨水游乐场", "RU": "Площадки у воды", "BN": "জলের ধারের খেলার মাঠ", "FR": "Aires de jeux au bord de l'eau"}, "garden": {"EN": "Botanical garden", "KO": "식물원", "ES": "Jardín botánico", "ZH": "植物园", "RU": "Ботанический сад", "BN": "উদ্ভিদ উদ্যান", "FR": "Jardin botanique"}, "artmus": {"EN": "Art museum", "KO": "미술관", "ES": "Museo de arte", "ZH": "艺术博物馆", "RU": "Художественный музей", "BN": "শিল্প জাদুঘর", "FR": "Musée d'art"}, "transit": {"EN": "Vintage subway cars", "KO": "옛 지하철 전시", "ES": "Vagones de metro antiguos", "ZH": "老式地铁车厢", "RU": "Старые вагоны метро", "BN": "পুরোনো মেট্রো কোচ", "FR": "Anciennes rames de métro"}, "sci": {"EN": "Hands-on science", "KO": "체험형 과학관", "ES": "Ciencia interactiva", "ZH": "互动科学馆", "RU": "Интерактивная наука", "BN": "হাতে-কলমে বিজ্ঞান", "FR": "Science interactive"}, "film": {"EN": "Film & interactive exhibits", "KO": "영화와 체험 전시", "ES": "Cine y exhibiciones interactivas", "ZH": "电影与互动展览", "RU": "Кино и интерактив", "BN": "চলচ্চিত্র ও ইন্টারঅ্যাকটিভ প্রদর্শনী", "FR": "Cinéma et expositions interactives"}, "indoor": {"EN": "Indoor playground", "KO": "실내 놀이터", "ES": "Parque infantil techado", "ZH": "室内游乐场", "RU": "Крытая игровая площадка", "BN": "ঘরের ভেতরের খেলার জায়গা", "FR": "Aire de jeux couverte"}, "sens": {"EN": "Sensory & movement play", "KO": "감각·움직임 놀이", "ES": "Juego sensorial y de movimiento", "ZH": "感统与运动游戏", "RU": "Сенсорные и двигательные игры", "BN": "সংবেদনশীল ও নড়াচড়ার খেলা", "FR": "Jeux sensoriels et moteurs"}, "cafe": {"EN": "Play cafe & juice bar", "KO": "놀이 카페와 주스바", "ES": "Café de juegos y jugos", "ZH": "亲子咖啡与果汁吧", "RU": "Игровое кафе и соки", "BN": "খেলার ক্যাফে ও জুস বার", "FR": "Café-jeux et jus"}, "playsp": {"EN": "Indoor play space", "KO": "실내 놀이 공간", "ES": "Espacio de juego techado", "ZH": "室内游戏空间", "RU": "Крытое игровое пространство", "BN": "ঘরের ভেতরের খেলার স্থান", "FR": "Espace de jeu couvert"}, "coffee": {"EN": "Play space & coffee", "KO": "놀이 공간과 커피", "ES": "Juegos y café", "ZH": "游戏空间与咖啡", "RU": "Игровая зона и кофе", "BN": "খেলার জায়গা ও কফি", "FR": "Espace jeux et café"}, "art": {"EN": "Interactive art", "KO": "체험형 아트", "ES": "Arte interactivo", "ZH": "互动艺术", "RU": "Интерактивное искусство", "BN": "ইন্টারঅ্যাকটিভ শিল্প", "FR": "Art interactif"}, "slime": {"EN": "Slime experience", "KO": "슬라임 체험", "ES": "Experiencia de slime", "ZH": "史莱姆体验", "RU": "Слайм-шоу", "BN": "স্লাইম অভিজ্ঞতা", "FR": "Expérience slime"}, "icecream": {"EN": "Interactive ice cream museum", "KO": "체험형 아이스크림 박물관", "ES": "Museo interactivo del helado", "ZH": "互动冰淇淋博物馆", "RU": "Интерактивный музей мороженого", "BN": "ইন্টারঅ্যাকটিভ আইসক্রিম জাদুঘর", "FR": "Musée interactif de la glace"}};
 const FPN={"American Museum of Natural History": "dino", "Children's Museum of Manhattan": "kidsmus", "Central Park Zoo": "zoo", "Hudson River Park (Pier 51)": "pier", "Brooklyn Children's Museum": "kidsmus", "Brooklyn Botanic Garden": "garden", "Prospect Park Zoo": "zoo", "Brooklyn Museum": "artmus", "New York Transit Museum": "transit", "Brooklyn Bridge Park": "bpark", "New York Hall of Science": "sci", "Queens Zoo": "zoo", "Queens Botanical Garden": "garden", "Museum of the Moving Image": "film", "Kids Town Play Space": "indoor", "PlayWell Brooklyn": "sens", "Good Day Play Cafe": "cafe", "Space Club Fort Greene": "playsp", "Space Club Dumbo": "playsp", "House of Wonder": "coffee", "Color Factory NYC": "art", "Sloomoo Institute": "slime", "Museum of Ice Cream": "icecream"};
+const FPT={"American Museum of Natural History": "im", "Children's Museum of Manhattan": "imp", "Central Park Zoo": "o", "Hudson River Park (Pier 51)": "op", "Brooklyn Children's Museum": "imp", "Brooklyn Botanic Garden": "o", "Prospect Park Zoo": "o", "Brooklyn Museum": "im", "New York Transit Museum": "im", "Brooklyn Bridge Park": "op", "New York Hall of Science": "im", "Queens Zoo": "o", "Queens Botanical Garden": "o", "Museum of the Moving Image": "im", "Kids Town Play Space": "ip", "PlayWell Brooklyn": "ip", "Good Day Play Cafe": "ip", "Space Club Fort Greene": "ip", "Space Club Dumbo": "ip", "House of Wonder": "ip", "Color Factory NYC": "i", "Sloomoo Institute": "i", "Museum of Ice Cream": "i"};
 const FPL=[["M","American Museum of Natural History"],["M","Children's Museum of Manhattan"],["M","Central Park Zoo"],["M","Hudson River Park (Pier 51)"],
 ["B","Brooklyn Children's Museum"],["B","Brooklyn Botanic Garden"],["B","Prospect Park Zoo"],["B","Brooklyn Museum"],["B","New York Transit Museum"],["B","Brooklyn Bridge Park"],
 ["Q","New York Hall of Science"],["Q","Queens Zoo"],["Q","Queens Botanical Garden"],["Q","Museum of the Moving Image"]];
@@ -907,22 +908,24 @@ const FPP={
 };
 function FpIcon({k,size=26}){ const c=FPC[k]||FPC.film; return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c[1]} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{FPP[k]||FPP.museum}</svg>); }
 const FPD={
-  EN:{t:"Family picks",mw:"min walk",sb:"by subway",aw:"away",in:"Indoor & rainy-day",all:"See all",less:"Show less",A:"All",M:"Manhattan",B:"Brooklyn",Q:"Queens",sf:"Step-free"},
-  KO:{t:"아이와 가볼 곳",mw:"분 도보",sb:"지하철로 이동",aw:"거리",in:"실내 · 비 오는 날",all:"전체 보기",less:"접기",A:"전체",M:"맨해튼",B:"브루클린",Q:"퀸즈",sf:"엘리베이터 역"},
-  ES:{t:"Para ir en familia",mw:"min a pie",sb:"en metro",aw:"de ti",in:"Bajo techo y días de lluvia",all:"Ver todo",less:"Ver menos",A:"Todos",M:"Manhattan",B:"Brooklyn",Q:"Queens",sf:"Sin escaleras"},
-  ZH:{t:"亲子好去处",mw:"分钟步行",sb:"乘地铁",aw:"距离",in:"室内 · 雨天去处",all:"查看全部",less:"收起",A:"全部",M:"曼哈顿",B:"布鲁克林",Q:"皇后区",sf:"无障碍站"},
-  RU:{t:"Куда с детьми",mw:"мин пешком",sb:"на метро",aw:"от вас",in:"В помещении и в дождь",all:"Все",less:"Свернуть",A:"Все",M:"Манхэттен",B:"Бруклин",Q:"Куинс",sf:"С лифтом"},
-  BN:{t:"পরিবারের জন্য",mw:"মিনিট হাঁটা",sb:"মেট্রোতে",aw:"দূরে",in:"ঘরের ভেতরে · বৃষ্টির দিন",all:"সব দেখুন",less:"কম দেখুন",A:"সব",M:"ম্যানহাটন",B:"ব্রুকলিন",Q:"কুইন্স",sf:"লিফটসহ"},
-  FR:{t:"Sorties en famille",mw:"min à pied",sb:"en métro",aw:"d'ici",in:"En intérieur · jours de pluie",all:"Tout voir",less:"Réduire",A:"Tous",M:"Manhattan",B:"Brooklyn",Q:"Queens",sf:"Sans marches"}
+  EN:{t:"Family picks",ci:"Indoor",co:"Outdoor",cp:"Play",cm:"Museums",mw:"min walk",sb:"by subway",aw:"away",in:"Indoor & rainy-day",all:"See all",less:"Show less",A:"All",M:"Manhattan",B:"Brooklyn",Q:"Queens",sf:"Step-free"},
+  KO:{t:"아이와 가볼 곳",ci:"실내",co:"야외",cp:"놀이",cm:"박물관",mw:"분 도보",sb:"지하철로 이동",aw:"거리",in:"실내 · 비 오는 날",all:"전체 보기",less:"접기",A:"전체",M:"맨해튼",B:"브루클린",Q:"퀸즈",sf:"엘리베이터 역"},
+  ES:{t:"Para ir en familia",ci:"Interior",co:"Exterior",cp:"Juego",cm:"Museos",mw:"min a pie",sb:"en metro",aw:"de ti",in:"Bajo techo y días de lluvia",all:"Ver todo",less:"Ver menos",A:"Todos",M:"Manhattan",B:"Brooklyn",Q:"Queens",sf:"Sin escaleras"},
+  ZH:{t:"亲子好去处",ci:"室内",co:"户外",cp:"游玩",cm:"博物馆",mw:"分钟步行",sb:"乘地铁",aw:"距离",in:"室内 · 雨天去处",all:"查看全部",less:"收起",A:"全部",M:"曼哈顿",B:"布鲁克林",Q:"皇后区",sf:"无障碍站"},
+  RU:{t:"Куда с детьми",ci:"В помещении",co:"На улице",cp:"Игры",cm:"Музеи",mw:"мин пешком",sb:"на метро",aw:"от вас",in:"В помещении и в дождь",all:"Все",less:"Свернуть",A:"Все",M:"Манхэттен",B:"Бруклин",Q:"Куинс",sf:"С лифтом"},
+  BN:{t:"পরিবারের জন্য",ci:"ঘরের ভেতরে",co:"বাইরে",cp:"খেলা",cm:"জাদুঘর",mw:"মিনিট হাঁটা",sb:"মেট্রোতে",aw:"দূরে",in:"ঘরের ভেতরে · বৃষ্টির দিন",all:"সব দেখুন",less:"কম দেখুন",A:"সব",M:"ম্যানহাটন",B:"ব্রুকলিন",Q:"কুইন্স",sf:"লিফটসহ"},
+  FR:{t:"Sorties en famille",ci:"Intérieur",co:"Extérieur",cp:"Jeux",cm:"Musées",mw:"min à pied",sb:"en métro",aw:"d'ici",in:"En intérieur · jours de pluie",all:"Tout voir",less:"Réduire",A:"Tous",M:"Manhattan",B:"Brooklyn",Q:"Queens",sf:"Sans marches"}
 };
-function FamilyPicks({lang,onPick,list,title,ver,tone,me}){
+function FamilyPicks({lang,onPick,ver,me}){
   const d=FPD[String(lang).toUpperCase()]||FPD.EN;
-  const [open,setOpen]=useState(false); const [bo,setBo]=useState("A");
-  const items=useMemo(()=>(list||FPL).map(([b,n])=>{ const pl=PLACES.find(x=>x.name===n); if(!pl||!pl.ll) return null;
+  const [open,setOpen]=useState(false); const [cat,setCat]=useState("A");
+  const ALL=useMemo(()=>FPL.concat(INDOOR.map(x=>[x.b,x.n])),[]);
+  const items=useMemo(()=>ALL.map(([b,n])=>{ const pl=PLACES.find(x=>x.name===n); if(!pl||!pl.ll) return null;
     return {b,n,pl,d:me?distM(me,pl.ll):null}; }).filter(Boolean).sort((a,b)=>me?a.d-b.d:0),[ver,me&&me[0],me&&me[1]]);
   if(!items.length) return null;
-  const shown=open?items.filter(i=>bo==="A"||i.b===bo):items;
-  const Card=({i,wide})=>{ const k=FPK[i.n]||"museum"; const c=FPC[k]; return (<button onClick={()=>onPick(i.n,i.pl)} className={"text-left rounded-2xl "+(tone?"bg-white border border-sky-200":"bg-slate-50 border border-slate-200")+" overflow-hidden flex flex-col active:bg-slate-100 "+(wide?"w-full":"shrink-0 w-[150px]")}>
+  const code={A:null,I:"i",O:"o",P:"p",M:"m"};
+  const shown=items.filter(i=>!code[cat]||(FPT[i.n]||"").includes(code[cat]));
+  const Card=({i,wide})=>{ const k=FPK[i.n]||"museum"; const c=FPC[k]; return (<button onClick={()=>onPick(i.n,i.pl)} className={"text-left rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden flex flex-col active:bg-slate-100 "+(wide?"w-full":"shrink-0 w-[150px]")}>
     <span className="h-[52px] flex items-center justify-center" style={{background:c[0]}}><FpIcon k={k} size={30}/></span>
     <span className="p-3 flex flex-col gap-1.5">
     <span className="text-[10.5px] font-bold uppercase tracking-wide text-emerald-700">{d[i.b]}</span>
@@ -931,10 +934,10 @@ function FamilyPicks({lang,onPick,list,title,ver,tone,me}){
     {i.d!=null && <span className="text-[12px] font-semibold text-slate-700">{i.d<=1600 ? fmtD(i.d)+" · "+walkMin(i.d)+" "+d.mw : fmtD(i.d)+" · "+d.sb}</span>}
     </span>
   </button>); };
-  return (<section className={"rounded-3xl p-4 space-y-3 "+(tone?"bg-sky-50 border border-sky-100":"bg-white shadow-md")}>
-    <div className="flex items-center justify-between"><h2 className={"text-[14px] font-extrabold flex items-center gap-1.5 "+(tone?"text-sky-900":"text-slate-800")}>{tone&&<FpIcon k="umb" size={18}/>}{title?d[title]:d.t}</h2>
+  return (<section className="bg-white rounded-3xl shadow-md p-4 space-y-3">
+    <div className="flex items-center justify-between"><h2 className="text-[14px] font-extrabold text-slate-800">{d.t}</h2>
       <button onClick={()=>setOpen(o=>!o)} className="min-h-[32px] px-1 text-[12.5px] font-bold text-blue-700">{open?d.less:d.all+" →"}</button></div>
-    {open && <div className="flex gap-1.5">{["A","M","B","Q"].map(k=>(<button key={k} onClick={()=>setBo(k)} className={"min-h-[34px] px-3 rounded-full text-[12px] font-bold "+(bo===k?"bg-emerald-600 text-white":"bg-slate-100 text-slate-600")}>{d[k]}</button>))}</div>}
+    <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 pb-0.5">{[["A",d.A],["I",d.ci],["O",d.co],["P",d.cp],["M",d.cm]].map(([k,l])=>(<button key={k} onClick={()=>setCat(k)} className={"shrink-0 min-h-[34px] px-3.5 rounded-full text-[12.5px] font-bold "+(cat===k?"bg-emerald-600 text-white":"bg-slate-100 text-slate-600")}>{l}</button>))}</div>
     {open ? <div className="grid grid-cols-2 gap-2">{shown.map(i=>(<Card key={i.n} i={i} wide/>))}</div>
       : <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1">{shown.map(i=>(<Card key={i.n} i={i}/>))}</div>}
   </section>);
@@ -1406,8 +1409,7 @@ function App(){
                   <span className="flex items-center gap-2 text-[13px] font-semibold text-slate-700"><span className="text-emerald-700"><Ic n="pin" m=""/></span>{q.t}</span>
                   <button onClick={askLoc} className="shrink-0 min-h-[40px] px-4 rounded-xl bg-emerald-600 text-white text-[13px] font-bold">{q.b}</button>
                 </div>); })()}
-              {landing && !ov && <FamilyPicks lang={lang} onPick={pick} me={origin0}/>}
-              {landing && !ov && <FamilyPicks lang={lang} onPick={pick} list={INDOOR.map(x=>[x.b,x.n])} title="in" ver={indVer} tone={1} me={origin0}/>}
+              {landing && !ov && <FamilyPicks lang={lang} onPick={pick} me={origin0} ver={indVer}/>}
               {landing && origin0 && <NearestCard t={t} lang={lang} me={origin0}/>}
               {route && <>
               {dd && dd.sp && !adHidden && (
