@@ -309,10 +309,13 @@ function pbRT(u){
   Object.values(map).forEach(a=>a.sort((x,y)=>x-y));
   return map;
 }
-const rtTimes=(st,lead)=>{ const d=RTD[RTFEED[st.l]]; if(!RTON||!d||Date.now()-d.at>180000) return null; const arr=d.map[st.sid+st.dd+"|"+st.l]; if(!arr) return null; const now=Date.now()/1000; const min=lead>0?now+lead*60+120:now; const r=arr.filter(x=>x>=min).slice(0,3).map(x=>Math.max(0,Math.round((x-now)/60))); return r.length?r:null; };
-const NXT={EN:"Next trains you can catch",ES:"Próximos trenes que alcanzas",ZH:"赶得上的下几班车",RU:"Ближайшие поезда, на которые успеете",BN:"যে ট্রেনগুলো ধরতে পারবেন",FR:"Prochains trains accessibles",KO:"탈 수 있는 다음 열차"};
-const NXU={EN:"min",ES:"min",ZH:"分钟",RU:"мин",BN:"মিনিট",FR:"min",KO:"분"};
-const rtTxt=(route,si,cur,lang)=>{ const st=route.steps[si]; if(!st||st.k!=="ride"||!st.sid||si!==route.steps.findIndex(x=>x.k==="ride")) return ""; let lead=0; for(let i=Math.max(cur||0,0);i<si;i++) lead+=route.steps[i].m||0; const r=rtTimes(st,lead); return r?(NXT[lang]||NXT.EN)+": "+r.join(" · ")+" "+(NXU[lang]||"min"):""; };
+const rtTimes=(st,lead)=>{ const d=RTD[RTFEED[st.l]]; if(!RTON||!d||Date.now()-d.at>180000) return null; const arr=d.map[st.sid+st.dd+"|"+st.l]; if(!arr) return null; const now=Date.now()/1000; const min=lead>0?now+lead*60+120:now; const r=arr.filter(x=>x>=min).slice(0,3); return r.length?r:null; };
+const NXT={EN:"Next trains",ES:"Próximos trenes",ZH:"下几班车",RU:"Ближайшие поезда",BN:"পরের ট্রেন",FR:"Prochains trains",KO:"다음 열차"};
+const LVB={EN:(a,b)=>"Leave by "+a+" to catch the "+b,ES:(a,b)=>"Sal antes de las "+a+" para el tren de las "+b,ZH:(a,b)=>"请在 "+a+" 前出发，赶 "+b+" 的车",RU:(a,b)=>"Выйдите до "+a+", чтобы успеть на поезд в "+b,BN:(a,b)=>a+"-এর মধ্যে রওনা দিন, "+b+"-এর ট্রেন ধরতে",FR:(a,b)=>"Partez avant "+a+" pour le train de "+b,KO:(a,b)=>b+" 열차를 타려면 "+a+"까지 출발하세요"};
+const rtClock=(sec,lang)=>fmtWall(nyWall(sec*1000),lang);
+const rtLines=(route,si,cur,lang)=>{ const st=route.steps[si]; if(!st||st.k!=="ride"||!st.sid||si!==route.steps.findIndex(x=>x.k==="ride")) return null; let lead=0; for(let i=Math.max(cur||0,0);i<si;i++) lead+=route.steps[i].m||0; const r=rtTimes(st,lead); if(!r) return null; const f=x=>rtClock(x,lang); return {next:(NXT[lang]||NXT.EN)+": "+r.map(f).join(" · "), leave:lead>0?(LVB[lang]||LVB.EN)(f(r[0]-(lead*60+120)),f(r[0])):""}; };
+const rtEta=(route,total,lang,twNow)=>{ const fi=route.steps.findIndex(x=>x.k==="ride"&&x.sid); if(fi>=0){ let pre=0; for(let i=0;i<fi;i++) pre+=route.steps[i].m||0; const r=rtTimes(route.steps[fi],pre); if(r) return rtClock(r[0]+Math.max(0,total-pre-4)*60,lang); } return fmtWall(twNow+total*60000,lang); };
+const rtTxt=(route,si,cur,lang)=>{ const l=rtLines(route,si,cur,lang); return l?l.next+(l.leave?"\n"+l.leave:""):""; };
 const namedLines=t=>{ const o=new Set(); String(t||"").replace(/\b([A-Z1-7](?:\/[A-Z1-7])*)(?=\s+(?:platform|service|train|line)\b)/g,(m,g)=>{ g.split("/").forEach(x=>o.add(x)); return m; }); return [...o]; };
 const fmtEta=v=>{ const m=/^(\d+)\/(\d+)\/\d+\s+(\d+):(\d+):\d+\s*(AM|PM)/i.exec(v||""); return m?(+m[1])+"/"+(+m[2])+" "+(+m[3])+":"+m[4]+" "+m[5].toUpperCase():(v||""); };
 const LV={
@@ -438,7 +441,7 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin}){
       items.push({key:"w"+si,geo:(st.end&&st.ll)?{ll:st.ll,r:150}:null,title:t.go(st.p),time:t.mn(st.m),body:st.end?(<p className="text-[12.5px] text-slate-500"><Ic n="pin"/>{st.p}</p>):null});
     } else if(st.k==="ride"){
       const nt=rtTxt(route,si,cur,lang);
-      items.push({key:"r"+si,label:t.ride(st.l,st.a,st.b),title:(<><span className="inline-flex align-middle mr-1.5"><LineBadge l={st.l} size="sm"/></span>{t.ride(st.l,st.a,st.b)}{nt&&<span className="block text-[12px] font-bold text-emerald-700 mt-0.5">{nt}</span>}</>),time:t.mn(st.m),body:st.car?(<>
+      items.push({key:"r"+si,label:t.ride(st.l,st.a,st.b),title:(<><span className="inline-flex align-middle mr-1.5"><LineBadge l={st.l} size="sm"/></span>{t.ride(st.l,st.a,st.b)}{nt&&<span className="block text-[12px] font-bold text-emerald-700 mt-0.5 whitespace-pre-line">{nt}</span>}</>),time:t.mn(st.m),body:st.car?(<>
         <span className="inline-block text-[12px] font-bold text-amber-900 bg-amber-100 rounded-full px-3 py-1">{t.carTxt(st.car,st.door)}</span>
         <div className="flex gap-1">
           {Array.from({length:8},(_,k)=>k+1).map(k=>{
@@ -932,7 +935,7 @@ function App(){
                         <LineBadge key={l} l={l}/>))}</div>
                       <div className="flex-1">
                         <div className="text-lg font-extrabold text-slate-900 leading-tight">{t.mn(totalMinO(rt,origin0))}</div>
-                        <div className="text-[12px] text-slate-500">{t.xfer(rt.steps.filter(x=>x.k==="xf").length)} · {ARR[lang]} {fmtWall(twNow+totalMinO(rt,origin0)*60000,lang)}</div>{(()=>{ const fi=rt.steps.findIndex(x=>x.k==="ride"); const n=fi>=0?rtTxt(rt,fi,0,lang):""; return n?<div className="text-[12px] font-bold text-emerald-700">{n}</div>:null; })()}{oc>0 && <div className="text-[12px] font-bold text-amber-800 mt-0.5">{lv.out(oc)} · {OUTCHK[lang]||OUTCHK.EN}</div>}
+                        <div className="text-[12px] text-slate-500">{t.xfer(rt.steps.filter(x=>x.k==="xf").length)} · {ARR[lang]} {rtEta(rt,totalMinO(rt,origin0),lang,twNow)}</div>{(()=>{ const fi=rt.steps.findIndex(x=>x.k==="ride"); const n=fi>=0?rtTxt(rt,fi,0,lang):""; return n?<div className="text-[12px] font-bold text-emerald-700 whitespace-pre-line">{n}</div>:null; })()}{oc>0 && <div className="text-[12px] font-bold text-amber-800 mt-0.5">{lv.out(oc)} · {OUTCHK[lang]||OUTCHK.EN}</div>}
                       </div>
                       <span className={"text-xs font-bold rounded-full px-2.5 py-1 "+((rt.warn||oc)?"bg-amber-100 text-amber-800":"bg-emerald-50 text-emerald-700")}>{(rt.warn||oc)?<><Ic n="alert" m="mr-0.5"/>{oc?oc:""}</>:<><Ic n="check" m="mr-0.5"/><Ic n="elevator" m=""/></>}</span>
                     </button>);})}
@@ -1041,7 +1044,7 @@ function App(){
                   </div>
                   <div className="text-right">
                     <div className="flex gap-1 justify-end">{route.lines.map(l=>(<LineBadge key={l} l={l} ring/>))}</div>
-                    <div className="text-[12px] font-semibold text-emerald-50 mt-1">{t.xfer(route.steps.filter(x=>x.k==="xf").length)}</div><div className="text-[12px] font-bold text-white tabular-nums">{ARR[lang]} {fmtWall(twNow+totalMinO(route,origin0)*60000,lang)}</div>
+                    <div className="text-[12px] font-semibold text-emerald-50 mt-1">{t.xfer(route.steps.filter(x=>x.k==="xf").length)}</div><div className="text-[12px] font-bold text-white tabular-nums">{ARR[lang]} {rtEta(route,totalMinO(route,origin0),lang,twNow)}</div>
                   </div>
                 </div>)}
               {route && (
