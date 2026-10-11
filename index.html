@@ -59,6 +59,7 @@ const ICONS = {
   globe:<><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></>,
   search:<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>,
   clock:<><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></>,
+  home:<><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></>,
   wifioff:<><path d="M12 20h.01"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.7"/><path d="M19 12.9a10 10 0 0 0-2-1.5"/><path d="M2 8.8a15 15 0 0 1 4.2-2.6"/><path d="M22 8.8a15 15 0 0 0-11.3-3.8"/><path d="m2 2 20 20"/></>,
   stairs:<path d="M4 20h4v-4h4v-4h4V8h4"/>,
   star:<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.3-6.2 3.3 1.2-6.8-5-4.9 6.9-1z"/>,
@@ -167,6 +168,7 @@ const recMs=v=>{ const m=/^(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):\d+\s*(AM|PM)/i.exe
 const fmtWall=(w,lang)=>{ try{ return new Date(w).toLocaleTimeString(lang==="KO"?"ko-KR":"en-US",{hour:"numeric",minute:"2-digit",timeZone:"UTC"}); }catch(e){ return ""; } };
 const wallStr=w=>new Date(w).toISOString().slice(0,16);
 const DST={EN:{start:"Choose starting point",rec:"Recent"},KO:{start:"출발지 선택",rec:"최근 검색"},ES:{start:"Elige el punto de partida",rec:"Recientes"},ZH:{start:"选择出发地",rec:"最近"},RU:{start:"Выберите начало маршрута",rec:"Недавние"},BN:{start:"শুরুর স্থান বেছে নিন",rec:"সাম্প্রতিক"},FR:{start:"Choisir le point de départ",rec:"Récents"}};
+const DHM={EN:{home:"Home",set:"Set location",change:"Change",ph:"Enter your home address"},KO:{home:"집",set:"위치 설정",change:"변경",ph:"집 주소를 입력하세요"},ES:{home:"Casa",set:"Definir ubicación",change:"Cambiar",ph:"Escribe la dirección de tu casa"},ZH:{home:"家",set:"设置位置",change:"更改",ph:"输入家庭地址"},RU:{home:"Дом",set:"Указать адрес",change:"Изменить",ph:"Введите домашний адрес"},BN:{home:"বাড়ি",set:"অবস্থান সেট করুন",change:"বদলান",ph:"বাড়ির ঠিকানা লিখুন"},FR:{home:"Domicile",set:"Définir l'adresse",change:"Modifier",ph:"Saisissez votre adresse"}};
 const DEXT={EN:{arrive:"Arrive by",done:"Done",cancel:"Cancel",late:"Can't arrive by then — showing leave now instead",lb:"Leave by"},
 KO:{arrive:"도착",done:"완료",cancel:"취소",late:"그 시간까지는 도착할 수 없어요 — 지금 출발 기준으로 보여드려요",lb:"출발 시각"},
 ES:{arrive:"Llegar a las",done:"Listo",cancel:"Cancelar",late:"No llegas a esa hora — se muestra salir ahora",lb:"Salir a las"},
@@ -473,7 +475,7 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin}){
     } else if(st.k==="walk"){
       items.push({key:"w"+si,geo:(st.end&&st.ll)?{ll:st.ll,r:150}:null,title:t.go(st.p),time:t.mn(st.m),body:st.end?(<p className="text-[12.5px] text-slate-500"><Ic n="pin"/>{st.p}</p>):null});
     } else if(st.k==="ride"){
-      const nt=rtTxt(route,si,cur,lang);
+      const nt=(rtLines(route,si,cur,lang)||{}).next||"";
       items.push({key:"r"+si,label:t.ride(st.l,st.a,st.b),title:(<><span className="inline-flex align-middle mr-1.5"><LineBadge l={st.l} size="sm"/></span>{t.ride(st.l,st.a,st.b)}{nt&&<span className="block text-[12px] font-bold text-emerald-700 mt-0.5 whitespace-pre-line">{nt}</span>}</>),time:t.mn(st.m),body:st.car?(<>
         <span className="inline-block text-[12px] font-bold text-amber-900 bg-amber-100 rounded-full px-3 py-1">{t.carTxt(st.car,st.door)}</span>
         <div className="flex gap-1">
@@ -929,9 +931,17 @@ function App(){
   const [fromBlank,setFromBlank] = useState(false);
   const [recentP,setRecentP] = useState(()=>{ try{ const r=JSON.parse(localStorage.getItem("skipstairs:rp")||"[]"); if(Array.isArray(r)){ r.forEach(x=>{ if(x&&x.geo&&x.name) GEOP[x.name.toLowerCase()]=x; }); return r.filter(x=>x&&x.name).slice(0,8); } }catch(e){} return []; });
   const dst = DST[String(lang).toUpperCase()]||DST.EN;
+  const dh = DHM[String(lang).toUpperCase()]||DHM.EN;
+  const [home,setHome] = useState(()=>{ try{ const h=JSON.parse(localStorage.getItem("skipstairs:home")||"null"); if(h&&Array.isArray(h.ll)&&h.ll.length===2) return h; }catch(e){} return null; });
+  if(home) GEOP["home"]={name:"Home",title:"Home",addr:home.addr||"",ll:home.ll,c:"pin",geo:true}; else delete GEOP["home"];
+  const [homeMode,setHomeMode] = useState(false); const homeRef = useRef(null);
+  const startHome = ()=>{ const f=fld; const prev=f==="from"?from:dest; homeRef.current={fld:f,prev}; setHomeMode(true); if(f==="from"){ setFromBlank(false); setFrom(""); } else { setDest(""); } };
+  const endHome = ()=>{ const h=homeRef.current; if(!h) return; homeRef.current=null; setHomeMode(false); if(h.fld==="from") setFrom(h.prev); else setDest(h.prev); };
   const [found,setFound] = useState([]);
   const [loading,setLoading] = useState(false);
-  const pick = (n,x)=>{ if(fld==="from"){ setFrom(n); } else { setDest(n); setRi(0); setOutage(false); }
+  const pick = (n,x)=>{
+    if(homeRef.current&&x&&x.ll){ const o={title:x.title||x.name,addr:x.addr||"",ll:x.ll}; setHome(o); try{ localStorage.setItem("skipstairs:home",JSON.stringify(o)); }catch(e){} endHome(); if(document.activeElement) document.activeElement.blur(); return; }
+    if(fld==="from"){ setFrom(n); } else { setDest(n); setRi(0); setOutage(false); }
     if(x){ const o={name:x.name,addr:x.addr,c:x.c,ll:x.ll,geo:!!x.geo,title:x.title}; setRecentP(r=>{ const nr=[o,...r.filter(y=>y.name!==o.name)].slice(0,8); try{ localStorage.setItem("skipstairs:rp",JSON.stringify(nr)); }catch(e){} return nr; }); } };
   useEffect(()=>{
     if(!fld) return;
@@ -1044,7 +1054,7 @@ function App(){
               <div className={ov?"flex-1 min-w-0":"flex-1 space-y-1.5"}>
                 <div className={ov?(fld==="from"?"relative rounded-full bg-slate-100 pl-4 pr-10 py-2":"hidden"):"rounded-xl px-3 py-2 "+(fld==="from"?"bg-white ring-2 ring-emerald-600":"bg-slate-50")}>
                   <div className={ov?"hidden":"text-[12px] font-semibold text-slate-400"}>{t.from}</div>
-                  <input value={fromBlank?"":(from===null?t.cur:from)} placeholder={dst.start} onChange={e=>{setFromBlank(false);setFrom(e.target.value);}} onFocus={e=>{setFld("from"); if(from===null) setFromBlank(true); else e.target.select();}} onBlur={()=>setTimeout(()=>{setFld(f=>f==="from"?null:f);setFromBlank(false);setFrom(f=>f===""?null:f);},150)}
+                  <input value={fromBlank?"":(from===null?t.cur:from)} placeholder={homeMode?dh.ph:dst.start} onChange={e=>{setFromBlank(false);setFrom(e.target.value);}} onFocus={e=>{setFld("from"); if(from===null) setFromBlank(true); else e.target.select();}} onBlur={()=>setTimeout(()=>{endHome();setFld(f=>f==="from"?null:f);setFromBlank(false);setFrom(f=>f===""?null:f);},150)}
                     className="w-full bg-transparent text-[16px] font-semibold outline-none"/>
                   {ov&&fld==="from"&&!fromBlank&&from!==null&&from!==""&&<button onMouseDown={e=>{e.preventDefault();setFrom("");}} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full text-slate-500 text-lg leading-none">×</button>}
                   {!ov && loc && !(loc.st==="ok"&&!loc.far) && (()=>{ const g=LOC[String(lang).toUpperCase()]||LOC.EN; return (<><p className={"text-[12px] font-semibold mt-1 leading-snug "+(loc.st==="ok"&&!loc.far?"text-emerald-700":loc.st==="ask"?"text-slate-500":"text-amber-800")}>{loc.st==="ask"?g.finding:loc.st==="denied"?g.denied:loc.st==="unavail"?g.unavail:(loc.far?g.far:g.near)(loc.n,fmtD(loc.d)+(loc.far?"":" · "+t.mn(walkMin(loc.d))))}{loc.st==="ok" && <button onClick={()=>goStation(loc.id,"in")} className="ml-2 underline underline-offset-2 text-slate-600">{g.view}</button>}</p>
@@ -1052,8 +1062,8 @@ function App(){
                 </div>
                 <div className={ov?(fld==="to"?"relative rounded-full bg-slate-100 pl-4 pr-10 py-2":"hidden"):"rounded-xl px-3 py-2 "+(fld==="to"?"bg-white ring-2 ring-emerald-600":"bg-slate-50")}>
                   <div className={ov?"hidden":"text-[12px] font-semibold text-slate-400"}>{t.to}</div>
-                  <input value={dest} onChange={e=>{setDest(e.target.value);setRi(0);setOutage(false);}} onFocus={e=>{setFld("to");e.target.select();}} onBlur={()=>setTimeout(()=>setFld(f=>f==="to"?null:f),150)}
-                    placeholder={t.ph} className="w-full bg-transparent text-[16px] font-semibold outline-none placeholder-slate-400"/>
+                  <input value={dest} onChange={e=>{setDest(e.target.value);setRi(0);setOutage(false);}} onFocus={e=>{setFld("to");e.target.select();}} onBlur={()=>setTimeout(()=>{endHome();setFld(f=>f==="to"?null:f);},150)}
+                    placeholder={homeMode?dh.ph:t.ph} className="w-full bg-transparent text-[16px] font-semibold outline-none placeholder-slate-400"/>
                   {ov&&fld==="to"&&dest!==""&&<button onMouseDown={e=>{e.preventDefault();setDest("");setRi(0);}} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full text-slate-500 text-lg leading-none">×</button>}
                 </div>
               </div>
@@ -1078,9 +1088,18 @@ function App(){
             </div>
             {fld && (
               <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain border-t border-slate-100 bg-white">
-                {fld==="from" && (fromBlank||from==="") && <button onMouseDown={()=>{setFrom(null);askLoc();}} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50 text-[13px] font-semibold text-blue-700"><span className="text-lg"><Ic n="pin"/></span>{t.cur}</button>}
+                {fld==="from" && !homeMode && (fromBlank||from==="") && <button onMouseDown={()=>{setFrom(null);askLoc();}} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50 text-[13px] font-semibold text-blue-700"><span className="text-lg"><Ic n="pin"/></span>{t.cur}</button>}
                 {loading && <div className="px-4 py-3 text-sm text-slate-400 animate-pulse">···</div>}
-                {(fld==="from"?(fromBlank||from===""):dest.trim()==="") && recentP.length>0 && (<>
+                {!homeMode && (fld==="from"?(fromBlank||from===""):dest.trim()==="") && (
+                  <div onMouseDown={e=>{ e.preventDefault(); if(home) pick("Home"); else startHome(); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-50 cursor-pointer">
+                    <span className="text-slate-500 text-lg"><Ic n="home" m=""/></span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-[13px] font-semibold text-slate-800">{dh.home}</span>
+                      <span className="block text-[12px] text-slate-400 truncate">{home?(home.title+(home.addr?" · "+home.addr:"")):dh.set}</span>
+                    </span>
+                    {home && <button onMouseDown={e=>{ e.stopPropagation(); e.preventDefault(); startHome(); }} className="text-[12px] font-bold text-emerald-700 px-2 py-1">{dh.change}</button>}
+                  </div>)}
+                {!homeMode && (fld==="from"?(fromBlank||from===""):dest.trim()==="") && recentP.length>0 && (<>
                   <div className="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">{dst.rec}</div>
                   {recentP.map(x=>(
                     <button key={"rp"+x.name} onMouseDown={()=>pick(x.name,x)} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50">
@@ -1092,7 +1111,7 @@ function App(){
                       {FOCUS&&x.ll&&<span className="text-[11px] font-semibold text-slate-400 tabular-nums shrink-0">{fmtD(distM(FOCUS,x.ll))}</span>}
                     </button>))}
                 </>)}
-                {!loading && found.filter(x=>!((fld==="from"?(fromBlank||from===""):dest.trim()==="")&&recentP.length>0)).map(x=>(
+                {!loading && found.filter(x=>!((fld==="from"?(fromBlank||from===""):dest.trim()==="")&&recentP.length>0&&!homeMode)).map(x=>(
                   <button key={x.name} onMouseDown={()=>pick(x.name,x)} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50">
                     <span className="text-slate-500 text-lg"><Ic n={x.c} m=""/></span>
                     <span className="flex-1 min-w-0">
