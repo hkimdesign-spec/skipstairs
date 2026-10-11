@@ -157,6 +157,8 @@ const liftCount = (r)=>{
 const totalMin = r => r.steps.reduce((a,x)=>a+x.m,0);
 // Real walk from the person's GPS position to the first station (straight line x1.25); null when no position.
 const startWalk=(r,origin)=>{ if(!origin) return null; const f=r.steps.find(x=>x.k==="walk"&&x.st&&!x.end); if(!f) return null; const S=stOf(f.st); const e=S&&pickEnt(S,r,false); const tgt=(e&&e.ll)||(S&&(S.pos||S.gpos)); if(!tgt) return null; const m=distM(origin,tgt); return {m,min:walkMin(m),sample:f.m}; };
+const ARR={EN:"Arrive",ES:"Llegada",ZH:"到达",RU:"Прибытие",BN:"পৌঁছাবেন",FR:"Arrivée",KO:"도착"};
+const arrAt=(min,lang)=>{ try{ return new Date(Date.now()+min*60000).toLocaleTimeString(lang==="KO"?"ko-KR":"en-US",{hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}); }catch(e){ return ""; } };
 const totalMinO=(r,origin)=>{ const w=startWalk(r,origin); return totalMin(r)+(w?w.min-w.sample:0); };
 const DESTS = [
   { name:"Whitney Museum", sp:{biz:"Sample Café",walk:2}, routes:WHITNEY, blocked:[{lines:["4","L"],m:31,at:"14 St-Union Sq"}] },
@@ -868,7 +870,7 @@ function App(){
                         <LineBadge key={l} l={l}/>))}</div>
                       <div className="flex-1">
                         <div className="text-lg font-extrabold text-slate-900 leading-tight">{t.mn(totalMinO(rt,origin0))}</div>
-                        <div className="text-[12px] text-slate-500">{t.xfer(rt.steps.filter(x=>x.k==="xf").length)}</div>
+                        <div className="text-[12px] text-slate-500">{t.xfer(rt.steps.filter(x=>x.k==="xf").length)} · {ARR[lang]} {arrAt(totalMinO(rt,origin0),lang)}</div>
                       </div>
                       <span className={"text-xs font-bold rounded-full px-2.5 py-1 "+(rt.warn?"bg-amber-50 text-amber-700":"bg-emerald-50 text-emerald-700")}>{rt.warn?<Ic n="alert" m=""/>:<><Ic n="check" m="mr-0.5"/><Ic n="elevator" m=""/></>}</span>
                     </button>))}
@@ -968,7 +970,7 @@ function App(){
                   </div>
                   <div className="text-right">
                     <div className="flex gap-1 justify-end">{route.lines.map(l=>(<LineBadge key={l} l={l} ring/>))}</div>
-                    <div className="text-[12px] font-semibold text-emerald-50 mt-1">{t.xfer(route.steps.filter(x=>x.k==="xf").length)}</div>
+                    <div className="text-[12px] font-semibold text-emerald-50 mt-1">{t.xfer(route.steps.filter(x=>x.k==="xf").length)}</div><div className="text-[12px] font-bold text-white tabular-nums">{ARR[lang]} {arrAt(totalMinO(route,origin0),lang)}</div>
                   </div>
                 </div>)}
               {route && (
