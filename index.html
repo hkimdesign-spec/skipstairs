@@ -547,7 +547,7 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin,cur0,o
             {state==="cur" && it.geo && geo==="watching" && <p className="text-[12.5px] font-semibold text-emerald-800 bg-emerald-50 rounded-xl px-3 py-2"><Ic n="pin"/>{gm!=null?g.auto(fmtD(gm)):g.wait}</p>}
             {state==="cur" && it.geo && geo==="denied" && <p className="text-[12.5px] text-slate-500"><Ic n="info"/>{g.denied}</p>}
             {state==="cur" && !it.geo && prog && it.key[0]!=="e" && it.key[0]!=="w" && <p className="text-[12.5px] text-slate-500"><Ic n="info"/>{g.manual}</p>}
-            {state==="cur" && (it.geo && geo==="watching"
+            {state==="cur" && (it.geo && geo==="watching" && i!==N-1
               ? <button onClick={()=>setCur(i+1)} className="min-h-[40px] text-[13px] font-semibold text-slate-500 underline underline-offset-2">{i===N-1?t.arrivedBtn:t.doneNext}</button>
               : <button onClick={()=>setCur(i+1)} className="w-full min-h-[48px] rounded-xl bg-emerald-600 text-white text-[14px] font-bold">{i===N-1?t.arrivedBtn:t.doneNext}</button>)}
           </FStep>);
@@ -556,8 +556,9 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin,cur0,o
         <div className="mt-3 flex items-center gap-3 rounded-2xl bg-emerald-50 p-3">
           <Elly mood="arrive" size={56}/>
           <p className="flex-1 text-[14px] font-bold text-emerald-800">{t.madeIt}</p>
-          <button onClick={()=>{setCur(0);setExp({});}} className="min-h-[40px] px-3.5 rounded-xl bg-white text-slate-700 text-[12.5px] font-bold border border-emerald-200"><Ic n="reset"/>{t.restartT}</button>
+          
         </div>)}
+      {fin && COUPONS[dest] && <Coupon cp={COUPONS[dest]} lang={lang}/>}
       {fin && TICKETS[dest] && (()=>{ const x=TXD[String(lang).toUpperCase()]||TXD.EN; return (
         <a href={TICKETS[dest]} target="_blank" rel="sponsored noopener" className="mt-2 flex items-center justify-between gap-2 min-h-[44px] rounded-xl bg-slate-50 border border-slate-200 px-3.5 text-[13px] font-bold text-slate-800">
           <span>{x.b} ›</span><span className="text-[10.5px] font-semibold text-slate-400">{x.a}</span>
@@ -809,6 +810,32 @@ const GN={
 };
 // 제휴 링크: 장소 이름 → URL. 비어 있으면 아무것도 표시되지 않아요. 예) "Queens Zoo":"https://..."
 const TICKETS={};
+// 쿠폰: 장소 이름 → {t:제목, code:코드, by:제공처, sample:true(샘플 표시)}. 진짜 쿠폰이 생기면 sample을 지우세요.
+const COUPONS={"Queens Zoo":{t:"10% off admission",code:"SKIP10",by:"Queens Zoo",sample:true}};
+const CPD={
+  EN:{h:"Your arrival coupon",c:"Code",cp:"Copy",ok:"Copied",show:"Show this at the entrance",sm:"Sample — not a real offer"},
+  KO:{h:"도착 쿠폰",c:"코드",cp:"복사",ok:"복사됨",show:"입구에서 보여 주세요",sm:"샘플 — 실제 혜택이 아니에요"},
+  ES:{h:"Tu cupón de llegada",c:"Código",cp:"Copiar",ok:"Copiado",show:"Muéstralo en la entrada",sm:"Ejemplo — no es una oferta real"},
+  ZH:{h:"到达优惠券",c:"代码",cp:"复制",ok:"已复制",show:"请在入口出示",sm:"示例 — 非真实优惠"},
+  RU:{h:"Купон по прибытии",c:"Код",cp:"Копировать",ok:"Скопировано",show:"Покажите на входе",sm:"Пример — не настоящее предложение"},
+  BN:{h:"পৌঁছানোর কুপন",c:"কোড",cp:"কপি",ok:"কপি হয়েছে",show:"প্রবেশদ্বারে দেখান",sm:"নমুনা — আসল অফার নয়"},
+  FR:{h:"Votre coupon d'arrivée",c:"Code",cp:"Copier",ok:"Copié",show:"À montrer à l'entrée",sm:"Exemple — pas une vraie offre"}
+};
+function Coupon({cp,lang}){
+  const d=CPD[String(lang).toUpperCase()]||CPD.EN; const [ok,setOk]=useState(false);
+  const copy=()=>{ try{ navigator.clipboard.writeText(cp.code).then(()=>{setOk(true);setTimeout(()=>setOk(false),1800);}).catch(()=>{}); }catch(e){} };
+  return (<div className="mt-2 rounded-2xl border-2 border-dashed border-emerald-300 bg-white p-3.5">
+    <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">{d.h}</p>
+    <p className="text-[18px] font-extrabold text-slate-900 leading-tight mt-1">{cp.t}</p>
+    <p className="text-[12.5px] font-semibold text-slate-500">{cp.by}</p>
+    <div className="mt-3 flex items-center gap-2">
+      <div className="flex-1 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2"><span className="block text-[10.5px] font-bold text-slate-400 uppercase">{d.c}</span><span className="text-[17px] font-extrabold tracking-widest text-slate-900">{cp.code}</span></div>
+      <button onClick={copy} className="shrink-0 self-stretch min-w-[76px] px-4 rounded-xl bg-emerald-600 text-white text-[13px] font-bold">{ok?d.ok:d.cp}</button>
+    </div>
+    <p className="text-[12px] text-slate-500 mt-2">{d.show}</p>
+    {cp.sample && <p className="text-[11px] font-semibold text-amber-700 mt-1">{d.sm}</p>}
+  </div>);
+}
 const TXD={
   EN:{b:"Skip the line — buy tickets",a:"Affiliate link"},
   KO:{b:"줄 서지 않게 티켓 미리 사기",a:"제휴 링크"},
