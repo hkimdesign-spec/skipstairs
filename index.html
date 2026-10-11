@@ -441,8 +441,10 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin}){
             {it.body}
             {state==="cur" && it.geo && geo==="watching" && <p className="text-[12.5px] font-semibold text-emerald-800 bg-emerald-50 rounded-xl px-3 py-2"><Ic n="pin"/>{gm!=null?g.auto(fmtD(gm)):g.wait}</p>}
             {state==="cur" && it.geo && geo==="denied" && <p className="text-[12.5px] text-slate-500"><Ic n="info"/>{g.denied}</p>}
-            {state==="cur" && !it.geo && prog && <p className="text-[12.5px] text-slate-500"><Ic n="info"/>{g.manual}</p>}
-            {state==="cur" && <button onClick={()=>setCur(i+1)} className="w-full min-h-[48px] rounded-xl bg-emerald-600 text-white text-[14px] font-bold">{i===N-1?t.arrivedBtn:t.doneNext}</button>}
+            {state==="cur" && !it.geo && prog && it.key[0]!=="e" && it.key[0]!=="w" && <p className="text-[12.5px] text-slate-500"><Ic n="info"/>{g.manual}</p>}
+            {state==="cur" && (it.geo && geo==="watching"
+              ? <button onClick={()=>setCur(i+1)} className="min-h-[40px] text-[13px] font-semibold text-slate-500 underline underline-offset-2">{i===N-1?t.arrivedBtn:t.doneNext}</button>
+              : <button onClick={()=>setCur(i+1)} className="w-full min-h-[48px] rounded-xl bg-emerald-600 text-white text-[14px] font-bold">{i===N-1?t.arrivedBtn:t.doneNext}</button>)}
           </FStep>);
       })}</ol>
       {fin && (
