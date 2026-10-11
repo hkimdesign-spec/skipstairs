@@ -295,7 +295,7 @@ const geoSearch=async q=>{
       const nm=tc((pr.name||String(pr.label||"").split(",")[0]).trim());
       const bo=pr.borough||pr.county||"";
       const name=bo?nm+", "+bo:nm;
-      const x={name,addr:(pr.layer==="venue"&&pr.street?(pr.housenumber?pr.housenumber+" ":"")+pr.street+", ":"")+(bo?bo+", NY":"New York, NY"),c:"pin",ll,geo:true,title:nm};
+      const x={name,addr:(()=>{ const st=pr.street?tc((pr.housenumber?pr.housenumber+" ":"")+pr.street):""; return (st&&st.toLowerCase()!==nm.toLowerCase()?st+", ":"")+(bo?bo+", NY":"New York, NY"); })(),c:"pin",ll,geo:true,title:nm};
       GEOP[name.toLowerCase()]=x; return x;
     }).filter(x=>x.ll.every(Number.isFinite));
   }catch(e){ return []; }
@@ -1070,7 +1070,7 @@ function App(){
             </div>
             <div className={(ov?"hidden ":"")+"mt-2 pt-2 border-t border-slate-100 px-1"}>
               <button onClick={()=>{ const w=nyWall(Date.now())+30*60000; setSMode(dmode==="arrive"&&arrT?"arrive":dep0?"leave":"now"); setSVal((dmode==="arrive"&&arrT)?arrT:dep0||wallStr(w-(w%900000))); setSheet(true); }} className="min-h-[38px] px-3.5 rounded-full text-[13px] font-bold bg-slate-100 text-slate-800 inline-flex items-center gap-1.5"><span className="tabular-nums">{dmode==="arrive"&&arrT?dx.arrive+" "+fmtDT(arrT):dep0?dt.leave+" "+fmtDT(dep0):dt.leave+" "+dt.now.toLowerCase()+" · "+fmtWall(nyWall(Date.now()),lang)}</span><span className="text-slate-400 text-[11px]">▾</span></button>
-              <p className="text-[12px] text-slate-500 mt-1.5 leading-snug">{dt[pk[0]]} · {dt[pk[1]]}{dep?" · "+dt.up:""}</p>
+              
               {dmode==="arrive"&&arrT&&arrLate && <p className="text-[12px] font-semibold text-amber-800 mt-1 leading-snug">{dx.late}</p>}
               {dmode==="arrive"&&arrT&&!arrLate&&arrDep && <p className="text-[12px] font-bold text-emerald-700 mt-1 leading-snug">{dx.lb}: {fmtDT(arrDep)}</p>}
               {sheet && (
@@ -1091,13 +1091,15 @@ function App(){
                 {fld==="from" && !homeMode && (fromBlank||from==="") && <button onMouseDown={()=>{setFrom(null);askLoc();}} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50 text-[13px] font-semibold text-blue-700"><span className="text-lg"><Ic n="pin"/></span>{t.cur}</button>}
                 {loading && <div className="px-4 py-3 text-sm text-slate-400 animate-pulse">···</div>}
                 {!homeMode && (fld==="from"?(fromBlank||from===""):dest.trim()==="") && (
-                  <div onMouseDown={e=>{ e.preventDefault(); if(home) pick("Home"); else startHome(); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-50 cursor-pointer">
-                    <span className="text-slate-500 text-lg"><Ic n="home" m=""/></span>
-                    <span className="flex-1 min-w-0">
-                      <span className="block text-[13px] font-semibold text-slate-800">{dh.home}</span>
-                      <span className="block text-[12px] text-slate-400 truncate">{home?(home.title+(home.addr?" · "+home.addr:"")):dh.set}</span>
-                    </span>
-                    {home && <button onMouseDown={e=>{ e.stopPropagation(); e.preventDefault(); startHome(); }} className="text-[12px] font-bold text-emerald-700 px-2 py-1">{dh.change}</button>}
+                  <div className="w-full flex items-center hover:bg-slate-50">
+                    <button onMouseDown={e=>{ e.preventDefault(); if(home) pick("Home"); else startHome(); }} className="flex-1 min-w-0 flex items-center gap-2.5 text-left px-3 py-2.5">
+                      <span className="text-slate-500 text-lg"><Ic n="home" m=""/></span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[13px] font-semibold text-slate-800">{dh.home}</span>
+                        <span className="block text-[12px] text-slate-400 truncate">{home?home.title:dh.set}</span>
+                      </span>
+                    </button>
+                    {home && <button onMouseDown={e=>{ e.preventDefault(); startHome(); }} className="shrink-0 text-[12px] font-bold text-emerald-700 px-4 py-3">{dh.change}</button>}
                   </div>)}
                 {!homeMode && (fld==="from"?(fromBlank||from===""):dest.trim()==="") && recentP.length>0 && (<>
                   <div className="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">{dst.rec}</div>
