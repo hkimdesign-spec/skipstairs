@@ -315,6 +315,7 @@ const LVB={EN:(a,b)=>"Leave by "+a+" to catch the "+b,ES:(a,b)=>"Sal antes de la
 const rtClock=(sec,lang)=>fmtWall(nyWall(sec*1000),lang);
 const rtLines=(route,si,cur,lang)=>{ const st=route.steps[si]; if(!st||st.k!=="ride"||!st.sid||si!==route.steps.findIndex(x=>x.k==="ride")) return null; let lead=0; for(let i=Math.max(cur||0,0);i<si;i++) lead+=route.steps[i].m||0; const r=rtTimes(st,lead); if(!r) return null; const f=x=>rtClock(x,lang); return {next:(NXT[lang]||NXT.EN)+": "+r.map(f).join(" · "), leave:lead>0?(LVB[lang]||LVB.EN)(f(r[0]-(lead*60+120)),f(r[0])):""}; };
 const rtEta=(route,total,lang,twNow)=>{ const fi=route.steps.findIndex(x=>x.k==="ride"&&x.sid); if(fi>=0){ let pre=0; for(let i=0;i<fi;i++) pre+=route.steps[i].m||0; const r=rtTimes(route.steps[fi],pre); if(r) return rtClock(r[0]+Math.max(0,total-pre-4)*60,lang); } return fmtWall(twNow+total*60000,lang); };
+const rtEtaSec=(route,total)=>{ const fi=route.steps.findIndex(x=>x.k==="ride"&&x.sid); if(fi>=0){ let pre=0; for(let i=0;i<fi;i++) pre+=route.steps[i].m||0; const r=rtTimes(route.steps[fi],pre); if(r) return r[0]+Math.max(0,total-pre-4)*60; } return Date.now()/1000+total*60; };
 const rtTxt=(route,si,cur,lang)=>{ const l=rtLines(route,si,cur,lang); return l?l.next+(l.leave?"\n"+l.leave:""):""; };
 const namedLines=t=>{ const o=new Set(); String(t||"").replace(/\b([A-Z1-7](?:\/[A-Z1-7])*)(?=\s+(?:platform|service|train|line)\b)/g,(m,g)=>{ g.split("/").forEach(x=>o.add(x)); return m; }); return [...o]; };
 const fmtEta=v=>{ const m=/^(\d+)\/(\d+)\/\d+\s+(\d+):(\d+):\d+\s*(AM|PM)/i.exec(v||""); return m?(+m[1])+"/"+(+m[2])+" "+(+m[3])+":"+m[4]+" "+m[5].toUpperCase():(v||""); };
@@ -851,7 +852,14 @@ function App(){
   const fromPl = from===null?null:resolvePlace(from);
   const originLL = from===null ? (loc&&loc.st==="ok"&&loc.me?loc.me:null) : (fromPl?fromPl.ll:null);
   const genList = useMemo(()=> (destPl&&destPl.ll&&originLL)?genRoutes(originLL,destPl.ll,destPl.name,pk):[], [destPl&&destPl.name, originLL&&originLL[0], originLL&&originLL[1], liveT.out, pk]);
-  const routes = genList.length?genList:(dd?dd.routes:[]);
+  const baseRoutes = genList.length?genList:(dd?dd.routes:[]);
+  const rtKey=[...new Set((baseRoutes||[]).map(r=>{ const x=(r.steps||[]).find(y=>y.k==="ride"&&y.sid); return x?RTFEED[x.l]:null; }).filter(Boolean))].sort().join(",");
+  const ordRef=useRef({key:"",idx:null});
+  const ordKey=(destPl?destPl.name:"")+"|"+(originLL?originLL[0].toFixed(4)+","+originLL[1].toFixed(4):"")+"|"+pk+"|"+dep+"|"+baseRoutes.length;
+  if(ordRef.current.key!==ordKey) ordRef.current={key:ordKey,idx:null};
+  const rtReady=!rtKey||dep||rtKey.split(",").every(f=>RTD[f]);
+  if(!ordRef.current.idx&&rtReady&&genList.length>1) ordRef.current.idx=baseRoutes.map((r,i)=>({i,e:rtEtaSec(r,totalMinO(r,originLL))})).sort((a,b)=>a.e-b.e).map(x=>x.i);
+  const routes = (genList.length&&ordRef.current.idx&&ordRef.current.idx.length===baseRoutes.length)?ordRef.current.idx.map(i=>baseRoutes[i]):baseRoutes;
   useEffect(()=>{ if(dest.trim()&&from===null&&!loc&&resolvePlace(dest)) askLoc(); },[dest]);
   const ddName = dd?dd.name:null;
   useEffect(()=>{ if(!ddName) return; setRecent(r=>{ const n=[ddName,...r.filter(x=>x!==ddName)].slice(0,3); try{ localStorage.setItem("skipstairs:recent",JSON.stringify(n)); }catch(e){} return n; }); },[ddName]);
@@ -901,7 +909,6 @@ function App(){
   const liveOn = live.st==="ok"||live.st==="stale";
   const [rtv,setRtv] = useState(0);
   RTON=!dep;
-  const rtKey=[...new Set((routes||[]).map(r=>{ const x=(r.steps||[]).find(y=>y.k==="ride"&&y.sid); return x?RTFEED[x.l]:null; }).filter(Boolean))].sort().join(",");
   useEffect(()=>{
     if(!rtKey||dep) return; let dead=false;
     const go=async()=>{
@@ -935,7 +942,7 @@ function App(){
                         <LineBadge key={l} l={l}/>))}</div>
                       <div className="flex-1">
                         <div className="text-lg font-extrabold text-slate-900 leading-tight">{t.mn(totalMinO(rt,origin0))}</div>
-                        <div className="text-[12px] text-slate-500">{t.xfer(rt.steps.filter(x=>x.k==="xf").length)} · {ARR[lang]} {rtEta(rt,totalMinO(rt,origin0),lang,twNow)}</div>{(()=>{ const fi=rt.steps.findIndex(x=>x.k==="ride"); const n=fi>=0?rtTxt(rt,fi,0,lang):""; return n?<div className="text-[12px] font-bold text-emerald-700 whitespace-pre-line">{n}</div>:null; })()}{oc>0 && <div className="text-[12px] font-bold text-amber-800 mt-0.5">{lv.out(oc)} · {OUTCHK[lang]||OUTCHK.EN}</div>}
+                        <div className="text-[12px] text-slate-500">{t.xfer(rt.steps.filter(x=>x.k==="xf").length)} · {ARR[lang]} {rtEta(rt,totalMinO(rt,origin0),lang,twNow)}</div>{(()=>{ const fi=rt.steps.findIndex(x=>x.k==="ride"); const l=fi>=0?rtLines(rt,fi,0,lang):null; const n=l?(l.leave||l.next):""; return n?<div className="text-[12px] font-bold text-emerald-700 whitespace-pre-line">{n}</div>:null; })()}{oc>0 && <div className="text-[12px] font-bold text-amber-800 mt-0.5">{lv.out(oc)} · {OUTCHK[lang]||OUTCHK.EN}</div>}
                       </div>
                       <span className={"text-xs font-bold rounded-full px-2.5 py-1 "+((rt.warn||oc)?"bg-amber-100 text-amber-800":"bg-emerald-50 text-emerald-700")}>{(rt.warn||oc)?<><Ic n="alert" m="mr-0.5"/>{oc?oc:""}</>:<><Ic n="check" m="mr-0.5"/><Ic n="elevator" m=""/></>}</span>
                     </button>);})}
