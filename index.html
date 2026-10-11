@@ -854,6 +854,10 @@ const LCD={
   BN:{t:"কাছের জায়গা আগে দেখুন",b:"অনুমতি দিন"},
   FR:{t:"Voir d'abord les lieux proches",b:"Autoriser"}
 };
+const GMD={
+  EN:"Hours & info ↗",KO:"영업시간·정보 ↗",ES:"Horarios e info ↗",ZH:"营业时间与信息 ↗",RU:"Часы и инфо ↗",BN:"সময় ও তথ্য ↗",FR:"Horaires et infos ↗"
+};
+const gmapUrl=(pl)=>"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(((pl.title||pl.name)+(pl.addr?" "+pl.addr:"")).trim());
 const RSM={
   EN:{t:"Trip in progress",go:"Continue",x:"Dismiss"},
   KO:{t:"진행 중인 안내",go:"이어가기",x:"닫기"},
@@ -1327,6 +1331,14 @@ function App(){
           {mode==="trip" && (
             <section className="space-y-3.5 pt-1">
               
+              {route && destPl && (
+                <div className="flex items-center justify-between gap-3 px-1">
+                  <div className="min-w-0">
+                    <p className="text-[16px] font-extrabold text-slate-900 leading-tight">{destPl.title||destPl.name}</p>
+                    {destPl.addr && <p className="text-[12px] text-slate-500 leading-snug truncate">{destPl.addr}</p>}
+                  </div>
+                  <a href={gmapUrl(destPl)} target="_blank" rel="noopener" className="shrink-0 min-h-[40px] px-3.5 rounded-full bg-white border border-slate-200 text-[12.5px] font-bold text-blue-700 flex items-center">{GMD[String(lang).toUpperCase()]||GMD.EN}</a>
+                </div>)}
               {route && (
                 <div className="flex items-center justify-between gap-3 bg-emerald-600 text-white rounded-2xl px-4 py-2">
                   <div>
