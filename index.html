@@ -286,6 +286,33 @@ function pickEnt(S,route,cd){
 let LIVE={}; // equipment id -> current (not planned) outage record from the MTA feed
 const isDown=e=>!!e.down||(e.req||[]).some(id=>!!LIVE[id])||(e.reqG||[]).some(g=>g.every(id=>!!LIVE[id]));
 const FEED="https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fnyct_ene.json";
+
+const RTBASE="https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2F";
+const RTFEED={A:"gtfs-ace",C:"gtfs-ace",E:"gtfs-ace",H:"gtfs-ace",B:"gtfs-bdfm",D:"gtfs-bdfm",F:"gtfs-bdfm",M:"gtfs-bdfm",G:"gtfs-g",J:"gtfs-jz",Z:"gtfs-jz",N:"gtfs-nqrw",Q:"gtfs-nqrw",R:"gtfs-nqrw",W:"gtfs-nqrw",L:"gtfs-l","1":"gtfs","2":"gtfs","3":"gtfs","4":"gtfs","5":"gtfs","6":"gtfs","7":"gtfs"};
+const RTD={}; let RTON=true;
+function pbRT(u){
+  const rv=p=>{ let x=0,m=1,b; do{ b=u[p.i++]; x+=(b&127)*m; m*=128; }while(b&128); return x; };
+  const fields=(s,e)=>{ const o=[]; const p={i:s}; while(p.i<e){ const k=rv(p); const f=Math.floor(k/8), w=k%8; if(w===0) o.push([f,rv(p)]); else if(w===2){ const l=rv(p); o.push([f,[p.i,p.i+l]]); p.i+=l; } else if(w===1) p.i+=8; else if(w===5) p.i+=4; else break; } return o; };
+  const str=r=>{ let s=""; for(let i=r[0];i<r[1];i++) s+=String.fromCharCode(u[i]); return s; };
+  const map={};
+  fields(0,u.length).forEach(([f,v])=>{ if(f!==2||!Array.isArray(v)) return;
+    fields(v[0],v[1]).forEach(([f2,v2])=>{ if(f2!==3||!Array.isArray(v2)) return;
+      let route=""; const ups=[];
+      fields(v2[0],v2[1]).forEach(([f3,v3])=>{ if(!Array.isArray(v3)) return;
+        if(f3===1) fields(v3[0],v3[1]).forEach(([f4,v4])=>{ if(f4===5&&Array.isArray(v4)) route=str(v4); });
+        else if(f3===2) ups.push(v3); });
+      ups.forEach(r=>{ let sid="",tm=0;
+        fields(r[0],r[1]).forEach(([f4,v4])=>{ if(!Array.isArray(v4)) return;
+          if(f4===4) sid=str(v4);
+          else if(f4===2||f4===3) fields(v4[0],v4[1]).forEach(([f5,v5])=>{ if(f5===2&&typeof v5==="number"&&!tm) tm=v5; }); });
+        if(sid&&tm){ const k=sid+"|"+route; (map[k]=map[k]||[]).push(tm); } }); }); });
+  Object.values(map).forEach(a=>a.sort((x,y)=>x-y));
+  return map;
+}
+const rtTimes=(st,lead)=>{ const d=RTD[RTFEED[st.l]]; if(!RTON||!d||Date.now()-d.at>180000) return null; const arr=d.map[st.sid+st.dd+"|"+st.l]; if(!arr) return null; const now=Date.now()/1000; const min=lead>0?now+lead*60+120:now; const r=arr.filter(x=>x>=min).slice(0,3).map(x=>Math.max(0,Math.round((x-now)/60))); return r.length?r:null; };
+const NXT={EN:"Next trains you can catch",ES:"Próximos trenes que alcanzas",ZH:"赶得上的下几班车",RU:"Ближайшие поезда, на которые успеете",BN:"যে ট্রেনগুলো ধরতে পারবেন",FR:"Prochains trains accessibles",KO:"탈 수 있는 다음 열차"};
+const NXU={EN:"min",ES:"min",ZH:"分钟",RU:"мин",BN:"মিনিট",FR:"min",KO:"분"};
+const rtTxt=(route,si,cur,lang)=>{ const st=route.steps[si]; if(!st||st.k!=="ride"||!st.sid||si!==route.steps.findIndex(x=>x.k==="ride")) return ""; let lead=0; for(let i=Math.max(cur||0,0);i<si;i++) lead+=route.steps[i].m||0; const r=rtTimes(st,lead); return r?(NXT[lang]||NXT.EN)+": "+r.join(" · ")+" "+(NXU[lang]||"min"):""; };
 const namedLines=t=>{ const o=new Set(); String(t||"").replace(/\b([A-Z1-7](?:\/[A-Z1-7])*)(?=\s+(?:platform|service|train|line)\b)/g,(m,g)=>{ g.split("/").forEach(x=>o.add(x)); return m; }); return [...o]; };
 const fmtEta=v=>{ const m=/^(\d+)\/(\d+)\/\d+\s+(\d+):(\d+):\d+\s*(AM|PM)/i.exec(v||""); return m?(+m[1])+"/"+(+m[2])+" "+(+m[3])+":"+m[4]+" "+m[5].toUpperCase():(v||""); };
 const LV={
@@ -410,7 +437,8 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin}){
     } else if(st.k==="walk"){
       items.push({key:"w"+si,geo:(st.end&&st.ll)?{ll:st.ll,r:150}:null,title:t.go(st.p),time:t.mn(st.m),body:st.end?(<p className="text-[12.5px] text-slate-500"><Ic n="pin"/>{st.p}</p>):null});
     } else if(st.k==="ride"){
-      items.push({key:"r"+si,label:t.ride(st.l,st.a,st.b),title:(<><span className="inline-flex align-middle mr-1.5"><LineBadge l={st.l} size="sm"/></span>{t.ride(st.l,st.a,st.b)}</>),time:t.mn(st.m),body:st.car?(<>
+      const nt=rtTxt(route,si,cur,lang);
+      items.push({key:"r"+si,label:t.ride(st.l,st.a,st.b),title:(<><span className="inline-flex align-middle mr-1.5"><LineBadge l={st.l} size="sm"/></span>{t.ride(st.l,st.a,st.b)}{nt&&<span className="block text-[12px] font-bold text-emerald-700 mt-0.5">{nt}</span>}</>),time:t.mn(st.m),body:st.car?(<>
         <span className="inline-block text-[12px] font-bold text-amber-900 bg-amber-100 rounded-full px-3 py-1">{t.carTxt(st.car,st.door)}</span>
         <div className="flex gap-1">
           {Array.from({length:8},(_,k)=>k+1).map(k=>{
@@ -702,7 +730,7 @@ function genRoutes(o,dl,dn,pk){
       const prev=L[i-1];
       if(x.k==="xf"){ const nxt=L.slice(i+1).find(y=>y.k==="ride"); const st=xf(x.b,nxt?nxt.l:""); st.m=Math.max(1,Math.round(x.t)); steps.push(st); return; }
       if(prev&&prev.k==="ride") steps.push(xf(x.a,x.l));
-      const sS=stOf(GID[N[x.a].cx]); const rs={k:"ride",l:x.l,a:N[x.a].n,b:N[x.b].n,m:Math.round(x.t+x.bd),st:stId(N[x.a].cx),hs:GRAPH.hs[x.h]};
+      const sS=stOf(GID[N[x.a].cx]); const rs={k:"ride",l:x.l,a:N[x.a].n,b:N[x.b].n,m:Math.round(x.t+x.bd),st:stId(N[x.a].cx),hs:GRAPH.hs[x.h],sid:N[x.a].id,dd:x.dr===0?"N":"S"};
       if(x.dr===0&&x.l!=="G"&&(N[x.a].b==="Bk"||N[x.a].b==="Q")) rs.dir="MAN";
       if(i===L.findIndex(y=>y.k==="ride")&&sS&&sS.car){ rs.car=sS.car; rs.door=sS.door; }
       steps.push(rs);
@@ -868,6 +896,18 @@ function App(){
   const liveBar = (()=>{ const mins=live.at?Math.floor((Date.now()-live.at)/60000):0; const good=live.st==="ok"; const bad=live.st==="err"||live.st==="stale";
     return (<div className={"flex items-center gap-2 text-[12px] font-semibold px-1 "+(bad?"text-amber-800":"text-slate-500")}><span className={"w-2 h-2 rounded-full shrink-0 "+(good?"bg-green-500 pulse-dot":bad?"bg-amber-500":"bg-slate-300")}></span><span className="leading-snug">{live.st==="loading"?"…":live.st==="err"?lv.err:live.st==="stale"?lv.stale:lv.ok+" · "+(mins<1?t.now:t.ago(mins))}</span></div>); })();
   const liveOn = live.st==="ok"||live.st==="stale";
+  const [rtv,setRtv] = useState(0);
+  RTON=!dep;
+  const rtKey=[...new Set((routes||[]).map(r=>{ const x=(r.steps||[]).find(y=>y.k==="ride"&&y.sid); return x?RTFEED[x.l]:null; }).filter(Boolean))].sort().join(",");
+  useEffect(()=>{
+    if(!rtKey||dep) return; let dead=false;
+    const go=async()=>{
+      await Promise.all(rtKey.split(",").map(async f=>{ try{ const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),12000); const r=await fetch(RTBASE+f,{signal:ctl.signal,cache:"no-store"}); clearTimeout(tm); if(!r.ok) return; const buf=await r.arrayBuffer(); RTD[f]={at:Date.now(),map:pbRT(new Uint8Array(buf))}; }catch(e){} }));
+      if(!dead) setRtv(v=>v+1);
+    };
+    go(); const iv=setInterval(go,30000);
+    return ()=>{ dead=true; clearInterval(iv); };
+  },[rtKey,!!dep]);
   const normN=x=>String(x||"").toLowerCase().replace(/\s+/g," ").trim();
   const routeOutsOf = route=>(route&&liveOn) ? (()=>{ const names=new Set(); route.steps.forEach(x=>{ if(x.k==="ride"){ names.add(normN(x.a)); names.add(normN(x.b)); } if(x.k==="xf") names.add(normN(x.p)); if(x.st){ const S=stOf(x.st); if(S) names.add(normN(S.name)); } });
     const dests=new Set(route.steps.filter(x=>x.k==="ride").map(x=>normN(x.b))); const ls=[...(route.lines||[])].map(x=>String(x).toUpperCase());
@@ -892,7 +932,7 @@ function App(){
                         <LineBadge key={l} l={l}/>))}</div>
                       <div className="flex-1">
                         <div className="text-lg font-extrabold text-slate-900 leading-tight">{t.mn(totalMinO(rt,origin0))}</div>
-                        <div className="text-[12px] text-slate-500">{t.xfer(rt.steps.filter(x=>x.k==="xf").length)} · {ARR[lang]} {fmtWall(twNow+totalMinO(rt,origin0)*60000,lang)}</div>{oc>0 && <div className="text-[12px] font-bold text-amber-800 mt-0.5">{lv.out(oc)} · {OUTCHK[lang]||OUTCHK.EN}</div>}
+                        <div className="text-[12px] text-slate-500">{t.xfer(rt.steps.filter(x=>x.k==="xf").length)} · {ARR[lang]} {fmtWall(twNow+totalMinO(rt,origin0)*60000,lang)}</div>{(()=>{ const fi=rt.steps.findIndex(x=>x.k==="ride"); const n=fi>=0?rtTxt(rt,fi,0,lang):""; return n?<div className="text-[12px] font-bold text-emerald-700">{n}</div>:null; })()}{oc>0 && <div className="text-[12px] font-bold text-amber-800 mt-0.5">{lv.out(oc)} · {OUTCHK[lang]||OUTCHK.EN}</div>}
                       </div>
                       <span className={"text-xs font-bold rounded-full px-2.5 py-1 "+((rt.warn||oc)?"bg-amber-100 text-amber-800":"bg-emerald-50 text-emerald-700")}>{(rt.warn||oc)?<><Ic n="alert" m="mr-0.5"/>{oc?oc:""}</>:<><Ic n="check" m="mr-0.5"/><Ic n="elevator" m=""/></>}</span>
                     </button>);})}
