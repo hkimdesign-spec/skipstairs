@@ -855,10 +855,21 @@ const RSM={
   FR:{t:"Trajet en cours",go:"Reprendre",x:"Ignorer"}
 };
 const FPK={"American Museum of Natural History": "museum", "Children's Museum of Manhattan": "kids", "Central Park Zoo": "zoo", "Hudson River Park (Pier 51)": "water", "Brooklyn Children's Museum": "kids", "Brooklyn Botanic Garden": "garden", "Prospect Park Zoo": "zoo", "Brooklyn Museum": "museum", "New York Transit Museum": "train", "Brooklyn Bridge Park": "water", "New York Hall of Science": "science", "Queens Zoo": "zoo", "Queens Botanical Garden": "garden", "Museum of the Moving Image": "film"};
+const INDOOR=[
+ {n:"Kids Town Play Space",a:"278A 6th St, Brooklyn, NY 11215",k:"kids",b:"B"},
+ {n:"PlayWell Brooklyn",a:"94 9th St, Brooklyn, NY 11215",k:"kids",b:"B"},
+ {n:"Good Day Play Cafe",a:"591 5th Ave, Brooklyn, NY 11215",k:"kids",b:"B"},
+ {n:"Space Club Fort Greene",a:"143 Waverly Ave, Brooklyn, NY 11205",k:"kids",b:"B"},
+ {n:"Space Club Dumbo",a:"254 Plymouth St, Brooklyn, NY 11201",k:"kids",b:"B"},
+ {n:"House of Wonder",a:"988 Fulton St, Brooklyn, NY 11238",k:"kids",b:"B"},
+ {n:"Color Factory NYC",a:"251 Spring St, New York, NY 10013",k:"star",b:"M"},
+ {n:"Sloomoo Institute",a:"475 Broadway, New York, NY 10013",k:"star",b:"M"},
+ {n:"Museum of Ice Cream",a:"558 Broadway, New York, NY 10012",k:"star",b:"M"}];
+INDOOR.forEach(x=>{ FPK[x.n]=x.k; });
 const FPL=[["M","American Museum of Natural History"],["M","Children's Museum of Manhattan"],["M","Central Park Zoo"],["M","Hudson River Park (Pier 51)"],
 ["B","Brooklyn Children's Museum"],["B","Brooklyn Botanic Garden"],["B","Prospect Park Zoo"],["B","Brooklyn Museum"],["B","New York Transit Museum"],["B","Brooklyn Bridge Park"],
 ["Q","New York Hall of Science"],["Q","Queens Zoo"],["Q","Queens Botanical Garden"],["Q","Museum of the Moving Image"]];
-const FPC={museum:["#fef3c7","#b45309"],kids:["#fce7f3","#be185d"],zoo:["#ffedd5","#c2410c"],water:["#e0f2fe","#0369a1"],garden:["#dcfce7","#15803d"],train:["#e0e7ff","#4338ca"],science:["#ede9fe","#6d28d9"],film:["#f1f5f9","#475569"]};
+const FPC={star:["#fef9c3","#a16207"],museum:["#fef3c7","#b45309"],kids:["#fce7f3","#be185d"],zoo:["#ffedd5","#c2410c"],water:["#e0f2fe","#0369a1"],garden:["#dcfce7","#15803d"],train:["#e0e7ff","#4338ca"],science:["#ede9fe","#6d28d9"],film:["#f1f5f9","#475569"]};
 const FPP={
  museum:<><path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 20h18"/></>,
  kids:<><rect x="3" y="12" width="8" height="8" rx="1"/><rect x="13" y="12" width="8" height="8" rx="1"/><rect x="8" y="4" width="8" height="8" rx="1"/></>,
@@ -867,24 +878,26 @@ const FPP={
  garden:<><circle cx="12" cy="9" r="2.2"/><path d="M12 6.8c-1-3 1-4 0-4M12 6.8c1-3-1-4 0-4M14.2 9c3-1 4 1 4 0M9.8 9c-3-1-4 1-4 0M12 11.2v10M12 17c-3 0-4.5-1.5-5-3.5 3 0 4.5 1 5 3.5zM12 15c3 0 4.5-1.5 5-3.5-3 0-4.5 1-5 3.5z"/></>,
  train:<><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14"/><circle cx="9" cy="14" r=".6"/><circle cx="15" cy="14" r=".6"/><path d="M8 21l2-4M16 21l-2-4"/></>,
  science:<><ellipse cx="12" cy="12" rx="9" ry="3.6"/><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(120 12 12)"/><circle cx="12" cy="12" r="1.2"/></>,
+ star:<><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></>,
  film:<><rect x="3" y="8" width="18" height="12" rx="1.5"/><path d="M3 8l3-5 3 5 3-5 3 5 3-5 3 5"/></>
 };
 function FpIcon({k,size=26}){ const c=FPC[k]||FPC.film; return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c[1]} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{FPP[k]||FPP.museum}</svg>); }
 const FPD={
-  EN:{t:"Family picks",all:"See all",less:"Show less",A:"All",M:"Manhattan",B:"Brooklyn",Q:"Queens",sf:"Step-free"},
-  KO:{t:"아이와 가볼 곳",all:"전체 보기",less:"접기",A:"전체",M:"맨해튼",B:"브루클린",Q:"퀸즈",sf:"엘리베이터 역"},
-  ES:{t:"Para ir en familia",all:"Ver todo",less:"Ver menos",A:"Todos",M:"Manhattan",B:"Brooklyn",Q:"Queens",sf:"Sin escaleras"},
-  ZH:{t:"亲子好去处",all:"查看全部",less:"收起",A:"全部",M:"曼哈顿",B:"布鲁克林",Q:"皇后区",sf:"无障碍站"},
-  RU:{t:"Куда с детьми",all:"Все",less:"Свернуть",A:"Все",M:"Манхэттен",B:"Бруклин",Q:"Куинс",sf:"С лифтом"},
-  BN:{t:"পরিবারের জন্য",all:"সব দেখুন",less:"কম দেখুন",A:"সব",M:"ম্যানহাটন",B:"ব্রুকলিন",Q:"কুইন্স",sf:"লিফটসহ"},
-  FR:{t:"Sorties en famille",all:"Tout voir",less:"Réduire",A:"Tous",M:"Manhattan",B:"Brooklyn",Q:"Queens",sf:"Sans marches"}
+  EN:{t:"Family picks",in:"Indoor & rainy-day",all:"See all",less:"Show less",A:"All",M:"Manhattan",B:"Brooklyn",Q:"Queens",sf:"Step-free"},
+  KO:{t:"아이와 가볼 곳",in:"실내 · 비 오는 날",all:"전체 보기",less:"접기",A:"전체",M:"맨해튼",B:"브루클린",Q:"퀸즈",sf:"엘리베이터 역"},
+  ES:{t:"Para ir en familia",in:"Bajo techo y días de lluvia",all:"Ver todo",less:"Ver menos",A:"Todos",M:"Manhattan",B:"Brooklyn",Q:"Queens",sf:"Sin escaleras"},
+  ZH:{t:"亲子好去处",in:"室内 · 雨天去处",all:"查看全部",less:"收起",A:"全部",M:"曼哈顿",B:"布鲁克林",Q:"皇后区",sf:"无障碍站"},
+  RU:{t:"Куда с детьми",in:"В помещении и в дождь",all:"Все",less:"Свернуть",A:"Все",M:"Манхэттен",B:"Бруклин",Q:"Куинс",sf:"С лифтом"},
+  BN:{t:"পরিবারের জন্য",in:"ঘরের ভেতরে · বৃষ্টির দিন",all:"সব দেখুন",less:"কম দেখুন",A:"সব",M:"ম্যানহাটন",B:"ব্রুকলিন",Q:"কুইন্স",sf:"লিফটসহ"},
+  FR:{t:"Sorties en famille",in:"En intérieur · jours de pluie",all:"Tout voir",less:"Réduire",A:"Tous",M:"Manhattan",B:"Brooklyn",Q:"Queens",sf:"Sans marches"}
 };
-function FamilyPicks({lang,onPick}){
+function FamilyPicks({lang,onPick,list,title,ver}){
   const d=FPD[String(lang).toUpperCase()]||FPD.EN;
   const [open,setOpen]=useState(false); const [bo,setBo]=useState("A");
-  const items=useMemo(()=>FPL.map(([b,n])=>{ const pl=PLACES.find(x=>x.name===n); if(!pl||!pl.ll) return null;
+  const items=useMemo(()=>(list||FPL).map(([b,n])=>{ const pl=PLACES.find(x=>x.name===n); if(!pl||!pl.ll) return null;
     const st=GEN.filter(x=>x.p&&x.a==="full").map(x=>({x,d:distM(pl.ll,x.p)})).sort((a,b)=>a.d-b.d)[0];
-    return {b,n,pl,st}; }).filter(Boolean),[]);
+    return {b,n,pl,st}; }).filter(Boolean),[ver]);
+  if(!items.length) return null;
   const shown=open?items.filter(i=>bo==="A"||i.b===bo):items;
   const Card=({i,wide})=>{ const k=FPK[i.n]||"museum"; const c=FPC[k]; return (<button onClick={()=>onPick(i.n,i.pl)} className={"text-left rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden flex flex-col active:bg-slate-100 "+(wide?"w-full":"shrink-0 w-[150px]")}>
     <span className="h-[52px] flex items-center justify-center" style={{background:c[0]}}><FpIcon k={k} size={30}/></span>
@@ -895,7 +908,7 @@ function FamilyPicks({lang,onPick}){
     </span>
   </button>); };
   return (<section className="bg-white rounded-3xl shadow-md p-4 space-y-3">
-    <div className="flex items-center justify-between"><h2 className="text-[14px] font-extrabold text-slate-800">{d.t}</h2>
+    <div className="flex items-center justify-between"><h2 className="text-[14px] font-extrabold text-slate-800">{title?d[title]:d.t}</h2>
       <button onClick={()=>setOpen(o=>!o)} className="min-h-[32px] px-1 text-[12.5px] font-bold text-blue-700">{open?d.less:d.all+" →"}</button></div>
     {open && <div className="flex gap-1.5">{["A","M","B","Q"].map(k=>(<button key={k} onClick={()=>setBo(k)} className={"min-h-[34px] px-3 rounded-full text-[12px] font-bold "+(bo===k?"bg-emerald-600 text-white":"bg-slate-100 text-slate-600")}>{d[k]}</button>))}</div>}
     {open ? <div className="grid grid-cols-2 gap-2">{shown.map(i=>(<Card key={i.n} i={i} wide/>))}</div>
@@ -1047,6 +1060,17 @@ function App(){
   if(home) GEOP["home"]={name:"Home",title:"Home",addr:home.addr||"",ll:home.ll,c:"pin",geo:true}; else delete GEOP["home"];
   const [trip,setTrip] = useState(()=>{ try{ const x=JSON.parse(localStorage.getItem("skipstairs:trip")||"null"); if(x&&x.dest&&x.cur>=1&&Date.now()-x.t<3*3600*1000) return x; }catch(e){} return null; });
   const resCur = useRef(0);
+  const [indVer,setIndVer] = useState(0);
+  useEffect(()=>{ let off=false; (async()=>{
+    let cache={}; try{ cache=JSON.parse(localStorage.getItem("skipstairs:igeo")||"{}")||{}; }catch(e){}
+    for(const it of INDOOR){
+      let ll=cache[it.n];
+      if(!ll){ const r=await geoSearch(it.a); const g=r.find(x=>x.ll[0]>40.4&&x.ll[0]<41&&x.ll[1]>-74.3&&x.ll[1]<-73.6); ll=g&&g.ll; if(ll) cache[it.n]=ll; }
+      if(ll&&!PLACES.some(p=>p.name===it.n)){ const pl={name:it.n,addr:it.a,c:"pin",ll}; PLACES.push(pl); GEOP[it.n.toLowerCase()]=pl; }
+      if(!off) setIndVer(v=>v+1);
+    }
+    try{ localStorage.setItem("skipstairs:igeo",JSON.stringify(cache)); }catch(e){}
+  })(); return ()=>{off=true}; },[]);
   const saveTrip = (cur,N)=>{ resCur.current=0; try{ if(cur>=1&&cur<N){ const o={dest,from,ri,cur,N,t:Date.now()}; localStorage.setItem("skipstairs:trip",JSON.stringify(o)); setTrip(o); } else { localStorage.removeItem("skipstairs:trip"); setTrip(null); } }catch(e){} };
   const dropTrip = ()=>{ try{ localStorage.removeItem("skipstairs:trip"); }catch(e){} setTrip(null); };
   const resumeTrip = ()=>{ if(!trip) return; resCur.current=trip.cur; setFrom(trip.from===undefined?null:trip.from); setRi(trip.ri||0); setDest(trip.dest); setTrip(null); window.scrollTo({top:0}); };
@@ -1337,6 +1361,7 @@ function App(){
                   <p className="text-[14px] font-semibold text-slate-700 leading-relaxed max-w-[280px]">{t.emptyHint}</p>
                 </div>)}
               {landing && !ov && <FamilyPicks lang={lang} onPick={pick}/>}
+              {landing && !ov && <FamilyPicks lang={lang} onPick={pick} list={INDOOR.map(x=>[x.b,x.n])} title="in" ver={indVer}/>}
               {landing && origin0 && <NearestCard t={t} lang={lang} me={origin0}/>}
               {route && <>
               {dd && dd.sp && !adHidden && (
