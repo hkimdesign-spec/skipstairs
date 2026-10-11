@@ -287,7 +287,8 @@ const geoSearch=async q=>{
     const j=await r.json();
     return (j.features||[]).filter(f=>f&&f.geometry&&f.geometry.coordinates&&f.properties).map(f=>{
       const pr=f.properties, ll=[f.geometry.coordinates[1],f.geometry.coordinates[0]];
-      const nm=(pr.name||String(pr.label||"").split(",")[0]).trim();
+      const tc=z=>z===z.toUpperCase()?z.toLowerCase().replace(/(^|[\s\-\/(])([a-z])/g,(m,a,b)=>a+b.toUpperCase()):z;
+      const nm=tc((pr.name||String(pr.label||"").split(",")[0]).trim());
       const bo=pr.borough||pr.county||"";
       const name=bo?nm+", "+bo:nm;
       const x={name,addr:(pr.layer==="venue"&&pr.street?(pr.housenumber?pr.housenumber+" ":"")+pr.street+", ":"")+(bo?bo+", NY":"New York, NY"),c:"pin",ll,geo:true};
@@ -935,6 +936,16 @@ function App(){
     const h = setTimeout(()=>searchPlaces(exact?"":txt).then(rs=>{ if(!off){ setFound(rs); setLoading(false); } }),250);
     return ()=>{ off=true; clearTimeout(h); };
   },[dest,from,fld]);
+  const [ddMax,setDdMax] = useState(320);
+  useEffect(()=>{
+    if(!fld) return;
+    const card=()=>document.getElementById("ftcard");
+    const upd=()=>{ const c=card(); if(!c) return; const r=c.getBoundingClientRect(); const vh=window.visualViewport?window.visualViewport.height:window.innerHeight; setDdMax(Math.max(150,vh-r.bottom-12)); };
+    const sc=()=>{ const c=card(); if(!c) return; const r=c.getBoundingClientRect(); window.scrollTo({top:Math.max(0,window.scrollY+r.top-10),behavior:"smooth"}); };
+    const t1=setTimeout(sc,60), t2=setTimeout(upd,450), t3=setTimeout(upd,1000);
+    const vv=window.visualViewport; if(vv) vv.addEventListener("resize",upd); window.addEventListener("scroll",upd,{passive:true}); upd();
+    return ()=>{ clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); if(vv) vv.removeEventListener("resize",upd); window.removeEventListener("scroll",upd); };
+  },[fld]);
   const goStation = (id,tb)=>{ setSel(STATIONS.find(x=>x.id===id)); setTab(tb); setMode("stations"); window.scrollTo({top:0,behavior:"smooth"}); };
   const t = T[lang], d = txOf(sel,lang);
   const liveBar = (()=>{ const mins=live.at?Math.floor((Date.now()-live.at)/60000):0; const good=live.st==="ok"; const bad=live.st==="err"||live.st==="stale";
@@ -1017,7 +1028,7 @@ function App(){
               <span className="absolute right-2.5 pointer-events-none text-[12px] text-slate-500"><Ic n="chevron" m=""/></span>
             </label>
           </div>
-          <div className="relative mt-4 bg-white rounded-3xl shadow-md border border-slate-200 p-3 text-slate-800">
+          <div id="ftcard" className="relative mt-4 bg-white rounded-3xl shadow-md border border-slate-200 p-3 text-slate-800">
             <div className="flex gap-3">
               <div className="flex flex-col items-center pt-4 pb-4">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
@@ -1058,7 +1069,7 @@ function App(){
                 </div>)}
             </div>
             {fld && (
-              <div className="absolute z-50 left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-xl overflow-hidden">
+              <div style={{maxHeight:ddMax}} className="absolute z-50 left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-xl overflow-y-auto overscroll-contain">
                 {fld==="from" && <button onMouseDown={()=>{setFrom(null);askLoc();}} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50 text-[13px] font-semibold text-blue-700"><span className="text-lg"><Ic n="pin"/></span>{t.cur}</button>}
                 {loading && <div className="px-3 py-2 flex items-center gap-2 text-sm text-slate-400"><Elly mood="search" size={38}/><span className="animate-pulse">···</span></div>}
                 {!loading && found.map(x=>(
@@ -1340,6 +1351,7 @@ function App(){
           </section>
           </>)}
         </main>
+        {fld && <div style={{height:"70vh"}}></div>}
       </div>
     </div>
   );
