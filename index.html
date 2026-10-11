@@ -58,6 +58,7 @@ const ICONS = {
   info:<><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></>,
   globe:<><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></>,
   search:<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>,
+  clock:<><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></>,
   wifioff:<><path d="M12 20h.01"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.7"/><path d="M19 12.9a10 10 0 0 0-2-1.5"/><path d="M2 8.8a15 15 0 0 1 4.2-2.6"/><path d="M22 8.8a15 15 0 0 0-11.3-3.8"/><path d="m2 2 20 20"/></>,
   stairs:<path d="M4 20h4v-4h4v-4h4V8h4"/>,
   star:<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.3-6.2 3.3 1.2-6.8-5-4.9 6.9-1z"/>,
@@ -165,6 +166,7 @@ const periodOf=w=>{ const d=new Date(w), dw=d.getUTCDay(), h=d.getUTCHours(); re
 const recMs=v=>{ const m=/^(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):\d+\s*(AM|PM)/i.exec(v||""); if(!m) return null; let h=(+m[4])%12; if(/PM/i.test(m[6])) h+=12; return Date.UTC(+m[3],+m[1]-1,+m[2],h,+m[5]); };
 const fmtWall=(w,lang)=>{ try{ return new Date(w).toLocaleTimeString(lang==="KO"?"ko-KR":"en-US",{hour:"numeric",minute:"2-digit",timeZone:"UTC"}); }catch(e){ return ""; } };
 const wallStr=w=>new Date(w).toISOString().slice(0,16);
+const DST={EN:{start:"Choose starting point",rec:"Recent"},KO:{start:"출발지 선택",rec:"최근 검색"},ES:{start:"Elige el punto de partida",rec:"Recientes"},ZH:{start:"选择出发地",rec:"最近"},RU:{start:"Выберите начало маршрута",rec:"Недавние"},BN:{start:"শুরুর স্থান বেছে নিন",rec:"সাম্প্রতিক"},FR:{start:"Choisir le point de départ",rec:"Récents"}};
 const DEXT={EN:{arrive:"Arrive by",done:"Done",cancel:"Cancel",late:"Can't arrive by then — showing leave now instead",lb:"Leave by"},
 KO:{arrive:"도착",done:"완료",cancel:"취소",late:"그 시간까지는 도착할 수 없어요 — 지금 출발 기준으로 보여드려요",lb:"출발 시각"},
 ES:{arrive:"Llegar a las",done:"Listo",cancel:"Cancelar",late:"No llegas a esa hora — se muestra salir ahora",lb:"Salir a las"},
@@ -924,9 +926,13 @@ function App(){
   const offline = offSim || offReal;
   const mins = savedAt ? Math.max(0,Math.round((Date.now()-savedAt)/60000))+(offSim?25:0) : 0;
   const hhmm = savedAt ? new Date(savedAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}) : "";
+  const [fromBlank,setFromBlank] = useState(false);
+  const [recentP,setRecentP] = useState(()=>{ try{ const r=JSON.parse(localStorage.getItem("skipstairs:rp")||"[]"); if(Array.isArray(r)){ r.forEach(x=>{ if(x&&x.geo&&x.name) GEOP[x.name.toLowerCase()]=x; }); return r.filter(x=>x&&x.name).slice(0,8); } }catch(e){} return []; });
+  const dst = DST[String(lang).toUpperCase()]||DST.EN;
   const [found,setFound] = useState([]);
   const [loading,setLoading] = useState(false);
-  const pick = (n)=>{ if(fld==="from"){ setFrom(n); } else { setDest(n); setRi(0); setOutage(false); } };
+  const pick = (n,x)=>{ if(fld==="from"){ setFrom(n); } else { setDest(n); setRi(0); setOutage(false); }
+    if(x){ const o={name:x.name,addr:x.addr,c:x.c,ll:x.ll,geo:!!x.geo}; setRecentP(r=>{ const nr=[o,...r.filter(y=>y.name!==o.name)].slice(0,8); try{ localStorage.setItem("skipstairs:rp",JSON.stringify(nr)); }catch(e){} return nr; }); } };
   useEffect(()=>{
     if(!fld) return;
     let off=false;
@@ -1038,14 +1044,14 @@ function App(){
               <div className="flex-1 space-y-1.5">
                 <div className={"rounded-xl px-3 py-2 "+(fld==="from"?"bg-white ring-2 ring-emerald-600":"bg-slate-50")}>
                   <div className="text-[12px] font-semibold text-slate-400">{t.from}</div>
-                  <input value={from===null?t.cur:from} onChange={e=>setFrom(e.target.value)} onFocus={e=>{setFld("from");e.target.select();}} onBlur={()=>setTimeout(()=>setFld(null),150)}
+                  <input value={fromBlank?"":(from===null?t.cur:from)} placeholder={dst.start} onChange={e=>{setFromBlank(false);setFrom(e.target.value);}} onFocus={e=>{setFld("from"); if(from===null) setFromBlank(true); else e.target.select();}} onBlur={()=>setTimeout(()=>{setFld(f=>f==="from"?null:f);setFromBlank(false);setFrom(f=>f===""?null:f);},150)}
                     className="w-full bg-transparent text-sm font-semibold outline-none"/>
                   {loc && !(loc.st==="ok"&&!loc.far) && (()=>{ const g=LOC[String(lang).toUpperCase()]||LOC.EN; return (<><p className={"text-[12px] font-semibold mt-1 leading-snug "+(loc.st==="ok"&&!loc.far?"text-emerald-700":loc.st==="ask"?"text-slate-500":"text-amber-800")}>{loc.st==="ask"?g.finding:loc.st==="denied"?g.denied:loc.st==="unavail"?g.unavail:(loc.far?g.far:g.near)(loc.n,fmtD(loc.d)+(loc.far?"":" · "+t.mn(walkMin(loc.d))))}{loc.st==="ok" && <button onClick={()=>goStation(loc.id,"in")} className="ml-2 underline underline-offset-2 text-slate-600">{g.view}</button>}</p>
               {(loc.st==="denied"||loc.st==="unavail") && <div className="flex flex-wrap gap-1.5 mt-1.5">{STATIONS.filter(x=>x.pos).map(x=>(<button key={x.id} onMouseDown={()=>{setFrom(SHORT[x.name]||x.name);setLoc(null);}} className="min-h-[34px] px-3 rounded-full bg-slate-100 text-slate-700 text-[12px] font-bold">{SHORT[x.name]||x.name}</button>))}</div>}</>); })()}
                 </div>
                 <div className={"rounded-xl px-3 py-2 "+(fld==="to"?"bg-white ring-2 ring-emerald-600":"bg-slate-50")}>
                   <div className="text-[12px] font-semibold text-slate-400">{t.to}</div>
-                  <input value={dest} onChange={e=>{setDest(e.target.value);setRi(0);setOutage(false);}} onFocus={e=>{setFld("to");e.target.select();}} onBlur={()=>setTimeout(()=>setFld(null),150)}
+                  <input value={dest} onChange={e=>{setDest(e.target.value);setRi(0);setOutage(false);}} onFocus={e=>{setFld("to");e.target.select();}} onBlur={()=>setTimeout(()=>setFld(f=>f==="to"?null:f),150)}
                     placeholder={t.ph} className="w-full bg-transparent text-sm font-semibold outline-none placeholder-slate-400"/>
                 </div>
               </div>
@@ -1072,8 +1078,20 @@ function App(){
               <div style={{maxHeight:ddMax}} className="absolute z-50 left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-xl overflow-y-auto overscroll-contain">
                 {fld==="from" && <button onMouseDown={()=>{setFrom(null);askLoc();}} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50 text-[13px] font-semibold text-blue-700"><span className="text-lg"><Ic n="pin"/></span>{t.cur}</button>}
                 {loading && <div className="px-3 py-2 flex items-center gap-2 text-sm text-slate-400"><Elly mood="search" size={38}/><span className="animate-pulse">···</span></div>}
-                {!loading && found.map(x=>(
-                  <button key={x.name} onMouseDown={()=>pick(x.name)} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50">
+                {(fld==="from"?(fromBlank||from===""):dest.trim()==="") && recentP.length>0 && (<>
+                  <div className="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">{dst.rec}</div>
+                  {recentP.map(x=>(
+                    <button key={"rp"+x.name} onMouseDown={()=>pick(x.name,x)} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50">
+                      <span className="text-slate-400 text-lg"><Ic n="clock" m=""/></span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[13px] font-semibold text-slate-800 truncate">{x.name}</span>
+                        <span className="block text-[12px] text-slate-400 truncate">{x.addr}</span>
+                      </span>
+                      {FOCUS&&x.ll&&<span className="text-[11px] font-semibold text-slate-400 tabular-nums shrink-0">{fmtD(distM(FOCUS,x.ll))}</span>}
+                    </button>))}
+                </>)}
+                {!loading && found.filter(x=>!((fld==="from"?(fromBlank||from===""):dest.trim()==="")&&recentP.some(r=>r.name===x.name))).map(x=>(
+                  <button key={x.name} onMouseDown={()=>pick(x.name,x)} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50">
                     <span className="text-slate-500 text-lg"><Ic n={x.c} m=""/></span>
                     <span className="flex-1 min-w-0">
                       <span className="block text-[13px] font-semibold text-slate-800 truncate">{x.name}</span>
