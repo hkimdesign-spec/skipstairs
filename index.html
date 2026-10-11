@@ -802,9 +802,22 @@ const GN={
   BN:{need:"লোকেশন বন্ধ, তাই কোথা থেকে শুরু করবেন জানি না। লোকেশন চালু করুন বা From-এ স্টেশন বা জায়গার নাম লিখুন।",note:"আপনার রওনার সময়ের MTA সময়সূচি ও এলিভেটর ডেটা অনুযায়ী। হাঁটা ও বদলের সময় আনুমানিক।",walk:(d,m)=>"হেঁটে গেলেও প্রায় একই সময়: "+d+" · "+m+" মিনিট"},
   FR:{need:"La position est désactivée, je ne sais pas d'où vous partez. Autorisez la position ou saisissez une station ou un lieu dans Départ.",note:"D'après les horaires de la MTA pour votre heure de départ et les données d'ascenseurs. Les temps de marche et de correspondance sont estimés.",walk:(d,m)=>"À pied, ce peut être aussi rapide : "+d+" · "+m+" min"},
 };
+const FPK={"American Museum of Natural History": "museum", "Children's Museum of Manhattan": "kids", "Central Park Zoo": "zoo", "Hudson River Park (Pier 51)": "water", "Brooklyn Children's Museum": "kids", "Brooklyn Botanic Garden": "garden", "Prospect Park Zoo": "zoo", "Brooklyn Museum": "museum", "New York Transit Museum": "train", "Brooklyn Bridge Park": "water", "New York Hall of Science": "science", "Queens Zoo": "zoo", "Queens Botanical Garden": "garden", "Museum of the Moving Image": "film"};
 const FPL=[["M","American Museum of Natural History"],["M","Children's Museum of Manhattan"],["M","Central Park Zoo"],["M","Hudson River Park (Pier 51)"],
 ["B","Brooklyn Children's Museum"],["B","Brooklyn Botanic Garden"],["B","Prospect Park Zoo"],["B","Brooklyn Museum"],["B","New York Transit Museum"],["B","Brooklyn Bridge Park"],
 ["Q","New York Hall of Science"],["Q","Queens Zoo"],["Q","Queens Botanical Garden"],["Q","Museum of the Moving Image"]];
+const FPC={museum:["#fef3c7","#b45309"],kids:["#fce7f3","#be185d"],zoo:["#ffedd5","#c2410c"],water:["#e0f2fe","#0369a1"],garden:["#dcfce7","#15803d"],train:["#e0e7ff","#4338ca"],science:["#ede9fe","#6d28d9"],film:["#f1f5f9","#475569"]};
+const FPP={
+ museum:<><path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 20h18"/></>,
+ kids:<><rect x="3" y="12" width="8" height="8" rx="1"/><rect x="13" y="12" width="8" height="8" rx="1"/><rect x="8" y="4" width="8" height="8" rx="1"/></>,
+ zoo:<><circle cx="12" cy="16" r="3.6"/><circle cx="5.5" cy="11" r="1.8"/><circle cx="9.5" cy="6.5" r="1.8"/><circle cx="14.5" cy="6.5" r="1.8"/><circle cx="18.5" cy="11" r="1.8"/></>,
+ water:<><path d="M2 9c2.5-2 4.5-2 7 0s4.5 2 7 0 4-2 6 0"/><path d="M2 14c2.5-2 4.5-2 7 0s4.5 2 7 0 4-2 6 0"/><path d="M2 19c2.5-2 4.5-2 7 0s4.5 2 7 0 4-2 6 0"/></>,
+ garden:<><circle cx="12" cy="9" r="2.2"/><path d="M12 6.8c-1-3 1-4 0-4M12 6.8c1-3-1-4 0-4M14.2 9c3-1 4 1 4 0M9.8 9c-3-1-4 1-4 0M12 11.2v10M12 17c-3 0-4.5-1.5-5-3.5 3 0 4.5 1 5 3.5zM12 15c3 0 4.5-1.5 5-3.5-3 0-4.5 1-5 3.5z"/></>,
+ train:<><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14"/><circle cx="9" cy="14" r=".6"/><circle cx="15" cy="14" r=".6"/><path d="M8 21l2-4M16 21l-2-4"/></>,
+ science:<><ellipse cx="12" cy="12" rx="9" ry="3.6"/><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(120 12 12)"/><circle cx="12" cy="12" r="1.2"/></>,
+ film:<><rect x="3" y="8" width="18" height="12" rx="1.5"/><path d="M3 8l3-5 3 5 3-5 3 5 3-5 3 5"/></>
+};
+function FpIcon({k,size=26}){ const c=FPC[k]||FPC.film; return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c[1]} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{FPP[k]||FPP.museum}</svg>); }
 const FPD={
   EN:{t:"Family picks",all:"See all",less:"Show less",A:"All",M:"Manhattan",B:"Brooklyn",Q:"Queens",sf:"Step-free"},
   KO:{t:"아이와 가볼 곳",all:"전체 보기",less:"접기",A:"전체",M:"맨해튼",B:"브루클린",Q:"퀸즈",sf:"엘리베이터 역"},
@@ -821,11 +834,14 @@ function FamilyPicks({lang,onPick}){
     const st=GEN.filter(x=>x.p&&x.a==="full").map(x=>({x,d:distM(pl.ll,x.p)})).sort((a,b)=>a.d-b.d)[0];
     return {b,n,pl,st}; }).filter(Boolean),[]);
   const shown=open?items.filter(i=>bo==="A"||i.b===bo):items;
-  const Card=({i,wide})=>(<button onClick={()=>onPick(i.n,i.pl)} className={"text-left rounded-2xl bg-slate-50 border border-slate-200 p-3 flex flex-col gap-1.5 active:bg-slate-100 "+(wide?"w-full":"shrink-0 w-[150px]")}>
+  const Card=({i,wide})=>{ const k=FPK[i.n]||"museum"; const c=FPC[k]; return (<button onClick={()=>onPick(i.n,i.pl)} className={"text-left rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden flex flex-col active:bg-slate-100 "+(wide?"w-full":"shrink-0 w-[150px]")}>
+    <span className="h-[52px] flex items-center justify-center" style={{background:c[0]}}><FpIcon k={k} size={30}/></span>
+    <span className="p-3 flex flex-col gap-1.5">
     <span className="text-[10.5px] font-bold uppercase tracking-wide text-emerald-700">{d[i.b]}</span>
     <span className="text-[13.5px] font-extrabold text-slate-900 leading-tight min-h-[34px]">{i.n}</span>
     {i.st && <span className="flex flex-wrap items-center gap-1">{i.st.x.r.slice(0,4).map(l=>(<LineBadge key={l} l={l} size="sm"/>))}<span className="text-[11px] font-semibold text-slate-500">{fmtD(i.st.d)}</span></span>}
-  </button>);
+    </span>
+  </button>); };
   return (<section className="bg-white rounded-3xl shadow-md p-4 space-y-3">
     <div className="flex items-center justify-between"><h2 className="text-[14px] font-extrabold text-slate-800">{d.t}</h2>
       <button onClick={()=>setOpen(o=>!o)} className="min-h-[32px] px-1 text-[12.5px] font-bold text-blue-700">{open?d.less:d.all+" →"}</button></div>
@@ -1159,9 +1175,9 @@ function App(){
                 </>)}
                 {!homeMode && fld==="to" && (toBlank||dest.trim()==="") && (
                   <div className="px-3 pt-3 pb-4">
-                    <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">{t.quickT}</div>
+                    <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">{(FPD[String(lang).toUpperCase()]||FPD.EN).t}</div>
                     <div className="flex flex-wrap gap-2">
-                      {DESTS.filter(d=>!recentP.slice(0,3).some(r=>r.name===d.name)).map(d=>(<button key={"qp"+d.name} onMouseDown={()=>pick(d.name,PLACES.find(q=>q.name===d.name)||{name:d.name,addr:"",c:"pin"})} className="min-h-[38px] px-3 rounded-full bg-slate-100 text-slate-700 text-[12.5px] font-semibold"><Ic n="pin"/>{SHORT[d.name]||d.name}</button>))}
+                      {["American Museum of Natural History","Children's Museum of Manhattan","Central Park Zoo","Brooklyn Children's Museum","Brooklyn Botanic Garden","Prospect Park Zoo","New York Hall of Science","Queens Zoo"].filter(x=>!recentP.slice(0,3).some(r=>r.name===x)).slice(0,6).map(x=>[0,x]).map(f=>{ const k=FPK[f[1]]; return (<button key={"qp"+f[1]} onMouseDown={()=>pick(f[1],PLACES.find(q=>q.name===f[1]))} className="min-h-[38px] pl-2 pr-3 rounded-full bg-slate-100 text-slate-700 text-[12.5px] font-semibold flex items-center gap-1.5"><span className="w-6 h-6 rounded-full flex items-center justify-center" style={{background:FPC[k][0]}}><FpIcon k={k} size={15}/></span>{SHORT[f[1]]||f[1]}</button>); })}
                     </div>
                   </div>)}
                 {!loading && found.filter(x=>!((fld==="from"?(fromBlank||from===""):(toBlank||dest.trim()===""))&&(fld==="to"||recentP.length>0)&&!homeMode)).map(x=>(
