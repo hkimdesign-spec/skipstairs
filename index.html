@@ -283,7 +283,7 @@ const geoSearch=async q=>{
   if(q.trim().length<3) return [];
   try{
     const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),4000);
-    const u=GEOURL+"?size=6&text="+encodeURIComponent(q.trim())+(FOCUS?"&focus.point.lat="+FOCUS[0]+"&focus.point.lon="+FOCUS[1]:"");
+    const u=GEOURL+"?size=10&text="+encodeURIComponent(q.trim())+(FOCUS?"&focus.point.lat="+FOCUS[0]+"&focus.point.lon="+FOCUS[1]:"");
     const r=await fetch(u,{signal:ctl.signal}); clearTimeout(tm);
     if(!r.ok) return [];
     const j=await r.json();
@@ -293,7 +293,7 @@ const geoSearch=async q=>{
       const nm=tc((pr.name||String(pr.label||"").split(",")[0]).trim());
       const bo=pr.borough||pr.county||"";
       const name=bo?nm+", "+bo:nm;
-      const x={name,addr:(pr.layer==="venue"&&pr.street?(pr.housenumber?pr.housenumber+" ":"")+pr.street+", ":"")+(bo?bo+", NY":"New York, NY"),c:"pin",ll,geo:true};
+      const x={name,addr:(pr.layer==="venue"&&pr.street?(pr.housenumber?pr.housenumber+" ":"")+pr.street+", ":"")+(bo?bo+", NY":"New York, NY"),c:"pin",ll,geo:true,title:nm};
       GEOP[name.toLowerCase()]=x; return x;
     }).filter(x=>x.ll.every(Number.isFinite));
   }catch(e){ return []; }
@@ -305,7 +305,7 @@ const searchPlaces = async (q) => {
   const stn = k.length>=2 ? STL.filter(x=>x.name.toLowerCase().includes(k)) : [];
   const loc = [...list.sort((a,b)=>demo(a.name)-demo(b.name)),...stn].slice(0,6);
   const geo = (await geoSearch(q)).filter(g=>!loc.some(l=>l.name.toLowerCase()===g.name.toLowerCase())).sort((a,b)=>FOCUS?distM(FOCUS,a.ll)-distM(FOCUS,b.ll):0);
-  return /^\d/.test(k) ? [...geo,...loc].slice(0,10) : [...loc,...geo].slice(0,10);
+  return /^\d/.test(k) ? [...geo,...loc].slice(0,12) : [...loc,...geo].slice(0,12);
 };
 
 function pickEnt(S,route,cd){
@@ -932,7 +932,7 @@ function App(){
   const [found,setFound] = useState([]);
   const [loading,setLoading] = useState(false);
   const pick = (n,x)=>{ if(fld==="from"){ setFrom(n); } else { setDest(n); setRi(0); setOutage(false); }
-    if(x){ const o={name:x.name,addr:x.addr,c:x.c,ll:x.ll,geo:!!x.geo}; setRecentP(r=>{ const nr=[o,...r.filter(y=>y.name!==o.name)].slice(0,8); try{ localStorage.setItem("skipstairs:rp",JSON.stringify(nr)); }catch(e){} return nr; }); } };
+    if(x){ const o={name:x.name,addr:x.addr,c:x.c,ll:x.ll,geo:!!x.geo,title:x.title}; setRecentP(r=>{ const nr=[o,...r.filter(y=>y.name!==o.name)].slice(0,8); try{ localStorage.setItem("skipstairs:rp",JSON.stringify(nr)); }catch(e){} return nr; }); } };
   useEffect(()=>{
     if(!fld) return;
     let off=false;
@@ -942,15 +942,14 @@ function App(){
     const h = setTimeout(()=>searchPlaces(exact?"":txt).then(rs=>{ if(!off){ setFound(rs); setLoading(false); } }),250);
     return ()=>{ off=true; clearTimeout(h); };
   },[dest,from,fld]);
-  const [ddMax,setDdMax] = useState(320);
+  const ov = !!fld;
+  const [vv,setVv] = useState({h:0,top:0});
   useEffect(()=>{
     if(!fld) return;
-    const card=()=>document.getElementById("ftcard");
-    const upd=()=>{ const c=card(); if(!c) return; const r=c.getBoundingClientRect(); const vh=window.visualViewport?window.visualViewport.height:window.innerHeight; setDdMax(Math.max(150,vh-r.bottom-12)); };
-    const sc=()=>{ const c=card(); if(!c) return; const r=c.getBoundingClientRect(); window.scrollTo({top:Math.max(0,window.scrollY+r.top-10),behavior:"smooth"}); };
-    const t1=setTimeout(sc,60), t2=setTimeout(upd,450), t3=setTimeout(upd,1000);
-    const vv=window.visualViewport; if(vv) vv.addEventListener("resize",upd); window.addEventListener("scroll",upd,{passive:true}); upd();
-    return ()=>{ clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); if(vv) vv.removeEventListener("resize",upd); window.removeEventListener("scroll",upd); };
+    const w=window.visualViewport;
+    const upd=()=>setVv({h:w?w.height:window.innerHeight,top:w?w.offsetTop:0});
+    upd(); if(w){ w.addEventListener("resize",upd); w.addEventListener("scroll",upd); }
+    return ()=>{ if(w){ w.removeEventListener("resize",upd); w.removeEventListener("scroll",upd); } };
   },[fld]);
   const goStation = (id,tb)=>{ setSel(STATIONS.find(x=>x.id===id)); setTab(tb); setMode("stations"); window.scrollTo({top:0,behavior:"smooth"}); };
   const t = T[lang], d = txOf(sel,lang);
@@ -1034,29 +1033,32 @@ function App(){
               <span className="absolute right-2.5 pointer-events-none text-[12px] text-slate-500"><Ic n="chevron" m=""/></span>
             </label>
           </div>
-          <div id="ftcard" className="relative mt-4 bg-white rounded-3xl shadow-md border border-slate-200 p-3 text-slate-800">
-            <div className="flex gap-3">
-              <div className="flex flex-col items-center pt-4 pb-4">
+          <div id="ftcard" style={ov?{height:vv.h||"100dvh",top:vv.top}:undefined} className={ov?"fixed inset-x-0 mx-auto max-w-[400px] z-[200] bg-white flex flex-col text-slate-800":"relative mt-4 bg-white rounded-3xl shadow-md border border-slate-200 p-3 text-slate-800"}>
+            <div className={ov?"flex items-center gap-2 p-2.5 shrink-0":"flex gap-3"}>
+              {ov && <button onMouseDown={e=>{e.preventDefault(); if(document.activeElement) document.activeElement.blur();}} className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-slate-700"><Ic n="back" m=""/></button>}
+              <div className={(ov?"hidden ":"")+"flex flex-col items-center pt-4 pb-4"}>
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
                 <span className="flex-1 border-l-2 border-dashed border-slate-300 my-1"></span>
                 <span className="text-sm leading-none"><Ic n="pin"/></span>
               </div>
-              <div className="flex-1 space-y-1.5">
-                <div className={"rounded-xl px-3 py-2 "+(fld==="from"?"bg-white ring-2 ring-emerald-600":"bg-slate-50")}>
-                  <div className="text-[12px] font-semibold text-slate-400">{t.from}</div>
+              <div className={ov?"flex-1 min-w-0":"flex-1 space-y-1.5"}>
+                <div className={ov?(fld==="from"?"relative rounded-full bg-slate-100 pl-4 pr-10 py-2":"hidden"):"rounded-xl px-3 py-2 "+(fld==="from"?"bg-white ring-2 ring-emerald-600":"bg-slate-50")}>
+                  <div className={ov?"hidden":"text-[12px] font-semibold text-slate-400"}>{t.from}</div>
                   <input value={fromBlank?"":(from===null?t.cur:from)} placeholder={dst.start} onChange={e=>{setFromBlank(false);setFrom(e.target.value);}} onFocus={e=>{setFld("from"); if(from===null) setFromBlank(true); else e.target.select();}} onBlur={()=>setTimeout(()=>{setFld(f=>f==="from"?null:f);setFromBlank(false);setFrom(f=>f===""?null:f);},150)}
-                    className="w-full bg-transparent text-sm font-semibold outline-none"/>
-                  {loc && !(loc.st==="ok"&&!loc.far) && (()=>{ const g=LOC[String(lang).toUpperCase()]||LOC.EN; return (<><p className={"text-[12px] font-semibold mt-1 leading-snug "+(loc.st==="ok"&&!loc.far?"text-emerald-700":loc.st==="ask"?"text-slate-500":"text-amber-800")}>{loc.st==="ask"?g.finding:loc.st==="denied"?g.denied:loc.st==="unavail"?g.unavail:(loc.far?g.far:g.near)(loc.n,fmtD(loc.d)+(loc.far?"":" · "+t.mn(walkMin(loc.d))))}{loc.st==="ok" && <button onClick={()=>goStation(loc.id,"in")} className="ml-2 underline underline-offset-2 text-slate-600">{g.view}</button>}</p>
+                    className="w-full bg-transparent text-[16px] font-semibold outline-none"/>
+                  {ov&&fld==="from"&&!fromBlank&&from!==null&&from!==""&&<button onMouseDown={e=>{e.preventDefault();setFrom("");}} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full text-slate-500 text-lg leading-none">×</button>}
+                  {!ov && loc && !(loc.st==="ok"&&!loc.far) && (()=>{ const g=LOC[String(lang).toUpperCase()]||LOC.EN; return (<><p className={"text-[12px] font-semibold mt-1 leading-snug "+(loc.st==="ok"&&!loc.far?"text-emerald-700":loc.st==="ask"?"text-slate-500":"text-amber-800")}>{loc.st==="ask"?g.finding:loc.st==="denied"?g.denied:loc.st==="unavail"?g.unavail:(loc.far?g.far:g.near)(loc.n,fmtD(loc.d)+(loc.far?"":" · "+t.mn(walkMin(loc.d))))}{loc.st==="ok" && <button onClick={()=>goStation(loc.id,"in")} className="ml-2 underline underline-offset-2 text-slate-600">{g.view}</button>}</p>
               {(loc.st==="denied"||loc.st==="unavail") && <div className="flex flex-wrap gap-1.5 mt-1.5">{STATIONS.filter(x=>x.pos).map(x=>(<button key={x.id} onMouseDown={()=>{setFrom(SHORT[x.name]||x.name);setLoc(null);}} className="min-h-[34px] px-3 rounded-full bg-slate-100 text-slate-700 text-[12px] font-bold">{SHORT[x.name]||x.name}</button>))}</div>}</>); })()}
                 </div>
-                <div className={"rounded-xl px-3 py-2 "+(fld==="to"?"bg-white ring-2 ring-emerald-600":"bg-slate-50")}>
-                  <div className="text-[12px] font-semibold text-slate-400">{t.to}</div>
+                <div className={ov?(fld==="to"?"relative rounded-full bg-slate-100 pl-4 pr-10 py-2":"hidden"):"rounded-xl px-3 py-2 "+(fld==="to"?"bg-white ring-2 ring-emerald-600":"bg-slate-50")}>
+                  <div className={ov?"hidden":"text-[12px] font-semibold text-slate-400"}>{t.to}</div>
                   <input value={dest} onChange={e=>{setDest(e.target.value);setRi(0);setOutage(false);}} onFocus={e=>{setFld("to");e.target.select();}} onBlur={()=>setTimeout(()=>setFld(f=>f==="to"?null:f),150)}
-                    placeholder={t.ph} className="w-full bg-transparent text-sm font-semibold outline-none placeholder-slate-400"/>
+                    placeholder={t.ph} className="w-full bg-transparent text-[16px] font-semibold outline-none placeholder-slate-400"/>
+                  {ov&&fld==="to"&&dest!==""&&<button onMouseDown={e=>{e.preventDefault();setDest("");setRi(0);}} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full text-slate-500 text-lg leading-none">×</button>}
                 </div>
               </div>
             </div>
-            <div className="mt-2 pt-2 border-t border-slate-100 px-1">
+            <div className={(ov?"hidden ":"")+"mt-2 pt-2 border-t border-slate-100 px-1"}>
               <button onClick={()=>{ const w=nyWall(Date.now())+30*60000; setSMode(dmode==="arrive"&&arrT?"arrive":dep0?"leave":"now"); setSVal((dmode==="arrive"&&arrT)?arrT:dep0||wallStr(w-(w%900000))); setSheet(true); }} className="min-h-[38px] px-3.5 rounded-full text-[13px] font-bold bg-slate-100 text-slate-800 inline-flex items-center gap-1.5"><span className="tabular-nums">{dmode==="arrive"&&arrT?dx.arrive+" "+fmtDT(arrT):dep0?dt.leave+" "+fmtDT(dep0):dt.leave+" "+dt.now.toLowerCase()+" · "+fmtWall(nyWall(Date.now()),lang)}</span><span className="text-slate-400 text-[11px]">▾</span></button>
               <p className="text-[12px] text-slate-500 mt-1.5 leading-snug">{dt[pk[0]]} · {dt[pk[1]]}{dep?" · "+dt.up:""}</p>
               {dmode==="arrive"&&arrT&&arrLate && <p className="text-[12px] font-semibold text-amber-800 mt-1 leading-snug">{dx.late}</p>}
@@ -1075,26 +1077,26 @@ function App(){
                 </div>)}
             </div>
             {fld && (
-              <div style={{maxHeight:ddMax}} className="absolute z-50 left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-xl overflow-y-auto overscroll-contain">
-                {fld==="from" && <button onMouseDown={()=>{setFrom(null);askLoc();}} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50 text-[13px] font-semibold text-blue-700"><span className="text-lg"><Ic n="pin"/></span>{t.cur}</button>}
-                {loading && <div className="px-3 py-2 flex items-center gap-2 text-sm text-slate-400"><Elly mood="search" size={38}/><span className="animate-pulse">···</span></div>}
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain border-t border-slate-100 bg-white">
+                {fld==="from" && (fromBlank||from==="") && <button onMouseDown={()=>{setFrom(null);askLoc();}} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50 text-[13px] font-semibold text-blue-700"><span className="text-lg"><Ic n="pin"/></span>{t.cur}</button>}
+                {loading && <div className="px-4 py-3 text-sm text-slate-400 animate-pulse">···</div>}
                 {(fld==="from"?(fromBlank||from===""):dest.trim()==="") && recentP.length>0 && (<>
                   <div className="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">{dst.rec}</div>
                   {recentP.map(x=>(
                     <button key={"rp"+x.name} onMouseDown={()=>pick(x.name,x)} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50">
                       <span className="text-slate-400 text-lg"><Ic n="clock" m=""/></span>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-[13px] font-semibold text-slate-800 truncate">{x.name}</span>
+                        <span className="block text-[13px] font-semibold text-slate-800 truncate">{x.title||x.name}</span>
                         <span className="block text-[12px] text-slate-400 truncate">{x.addr}</span>
                       </span>
                       {FOCUS&&x.ll&&<span className="text-[11px] font-semibold text-slate-400 tabular-nums shrink-0">{fmtD(distM(FOCUS,x.ll))}</span>}
                     </button>))}
                 </>)}
-                {!loading && found.filter(x=>!((fld==="from"?(fromBlank||from===""):dest.trim()==="")&&recentP.some(r=>r.name===x.name))).map(x=>(
+                {!loading && found.filter(x=>!((fld==="from"?(fromBlank||from===""):dest.trim()==="")&&recentP.length>0)).map(x=>(
                   <button key={x.name} onMouseDown={()=>pick(x.name,x)} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50">
                     <span className="text-slate-500 text-lg"><Ic n={x.c} m=""/></span>
                     <span className="flex-1 min-w-0">
-                      <span className="block text-[13px] font-semibold text-slate-800 truncate">{x.name}</span>
+                      <span className="block text-[13px] font-semibold text-slate-800 truncate">{x.title||x.name}</span>
                       <span className="block text-[12px] text-slate-400 truncate">{x.addr}</span>
                     </span>
                     {fld==="to" && DESTS.some(d=>d.name===x.name) && <span className="text-xs text-emerald-600"><Ic n="check"/></span>}
@@ -1369,7 +1371,6 @@ function App(){
           </section>
           </>)}
         </main>
-        {fld && <div style={{height:"70vh"}}></div>}
       </div>
     </div>
   );
