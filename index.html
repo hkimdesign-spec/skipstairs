@@ -937,10 +937,10 @@ function WeekendPicks({lang,onPick,ver}){
   if(!items.length) return null;
   const title=d.u;
   return (<section className="bg-white rounded-3xl shadow-md p-4 space-y-3">
-    <h2 className="text-[14px] font-extrabold text-slate-800">{title}</h2>
-    <div style={{display:"flex",gap:8,overflowX:"auto",margin:"0 -16px",padding:"0 16px 4px"}}>
+    <div style={{display:"flex",alignItems:"center",minHeight:32}}><h2 className="text-[14px] font-extrabold text-slate-800">{title}</h2></div>
+    <div style={{display:"flex",gap:8,overflowX:"auto",margin:"14px -16px 0",padding:"0 16px 8px"}}>
     {items.map(({w,dt})=>{ const pl=PLACES.find(x=>x.name===w.v); const day=dt.toLocaleDateString(d.l,{weekday:"short"}); const md=dt.toLocaleDateString(d.l,{month:"short",day:"numeric"});
-      return (<div key={w.t.EN+w.d} style={{display:"flex",gap:12,alignItems:"stretch",border:"1px solid #e2e8f0",borderRadius:16,background:"#f8fafc",padding:12,flex:items.length>1?"0 0 285px":"1 1 100%",boxSizing:"border-box"}}>
+      return (<div key={w.t.EN+w.d} style={{display:"flex",gap:12,alignItems:"stretch",border:"1px solid #e2e8f0",borderRadius:16,background:"#f8fafc",padding:14,flex:items.length>1?"0 0 285px":"1 1 100%",boxSizing:"border-box"}}>
         <div style={{width:54,flexShrink:0,borderRadius:12,background:"#ecfdf5",color:"#047857",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",lineHeight:1.15}}><span style={{fontSize:11,fontWeight:700,textTransform:"uppercase"}}>{day}</span><span style={{fontSize:13,fontWeight:800}}>{md}</span></div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:14,fontWeight:800,color:"#0f172a",lineHeight:1.25}}>{w.t[L]||w.t.EN}</div>
