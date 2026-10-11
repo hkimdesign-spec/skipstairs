@@ -942,6 +942,7 @@ function App(){
   const pick = (n,x)=>{
     if(homeRef.current&&x&&x.ll){ const o={title:x.title||x.name,addr:x.addr||"",ll:x.ll}; setHome(o); try{ localStorage.setItem("skipstairs:home",JSON.stringify(o)); }catch(e){} endHome(); if(document.activeElement) document.activeElement.blur(); return; }
     if(fld==="from"){ setFrom(n); } else { setDest(n); setRi(0); setOutage(false); }
+    if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
     if(x){ const o={name:x.name,addr:x.addr,c:x.c,ll:x.ll,geo:!!x.geo,title:x.title}; setRecentP(r=>{ const nr=[o,...r.filter(y=>y.name!==o.name)].slice(0,8); try{ localStorage.setItem("skipstairs:rp",JSON.stringify(nr)); }catch(e){} return nr; }); } };
   useEffect(()=>{
     if(!fld) return;
@@ -1088,7 +1089,7 @@ function App(){
             </div>
             {fld && (
               <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain border-t border-slate-100 bg-white">
-                {fld==="from" && !homeMode && (fromBlank||from==="") && <button onMouseDown={()=>{setFrom(null);askLoc();}} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50 text-[13px] font-semibold text-blue-700"><span className="text-lg"><Ic n="pin"/></span>{t.cur}</button>}
+                {fld==="from" && !homeMode && (fromBlank||from==="") && <button onMouseDown={()=>{setFrom(null);askLoc();if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();}} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50 text-[13px] font-semibold text-blue-700"><span className="text-lg"><Ic n="pin"/></span>{t.cur}</button>}
                 {loading && <div className="px-4 py-3 text-sm text-slate-400 animate-pulse">···</div>}
                 {!homeMode && (fld==="from"?(fromBlank||from===""):dest.trim()==="") && (
                   <div className="w-full flex items-center hover:bg-slate-50">
