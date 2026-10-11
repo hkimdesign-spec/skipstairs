@@ -1104,7 +1104,7 @@ function App(){
                   </div>)}
                 {!homeMode && (fld==="from"?(fromBlank||from===""):dest.trim()==="") && recentP.length>0 && (<>
                   <div className="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">{dst.rec}</div>
-                  {recentP.map(x=>(
+                  {recentP.slice(0,3).map(x=>(
                     <button key={"rp"+x.name} onMouseDown={()=>pick(x.name,x)} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50">
                       <span className="text-slate-400 text-lg"><Ic n="clock" m=""/></span>
                       <span className="flex-1 min-w-0">
@@ -1114,7 +1114,14 @@ function App(){
                       {FOCUS&&x.ll&&<span className="text-[11px] font-semibold text-slate-400 tabular-nums shrink-0">{fmtD(distM(FOCUS,x.ll))}</span>}
                     </button>))}
                 </>)}
-                {!loading && found.filter(x=>!((fld==="from"?(fromBlank||from===""):dest.trim()==="")&&recentP.length>0&&!homeMode)).map(x=>(
+                {!homeMode && fld==="to" && dest.trim()==="" && (
+                  <div className="px-3 pt-3 pb-4">
+                    <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">{t.quickT}</div>
+                    <div className="flex flex-wrap gap-2">
+                      {DESTS.filter(d=>!recentP.slice(0,3).some(r=>r.name===d.name)).map(d=>(<button key={"qp"+d.name} onMouseDown={()=>pick(d.name,PLACES.find(q=>q.name===d.name)||{name:d.name,addr:"",c:"pin"})} className="min-h-[38px] px-3 rounded-full bg-slate-100 text-slate-700 text-[12.5px] font-semibold"><Ic n="pin"/>{SHORT[d.name]||d.name}</button>))}
+                    </div>
+                  </div>)}
+                {!loading && found.filter(x=>!((fld==="from"?(fromBlank||from===""):dest.trim()==="")&&(fld==="to"||recentP.length>0)&&!homeMode)).map(x=>(
                   <button key={x.name} onMouseDown={()=>pick(x.name,x)} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50">
                     <span className="text-slate-500 text-lg"><Ic n={x.c} m=""/></span>
                     <span className="flex-1 min-w-0">
@@ -1202,22 +1209,6 @@ function App(){
                 <div className="bg-white rounded-3xl shadow-md p-5 flex flex-col items-center text-center gap-3">
                   <Elly mood="hello" size={84}/>
                   <p className="text-[14px] font-semibold text-slate-700 leading-relaxed max-w-[280px]">{t.emptyHint}</p>
-                  {recent.length>0 && (
-                    <div className="w-full text-left">
-                      <div className="flex items-center justify-between px-1 mb-1.5">
-                        <span className="text-[12px] font-bold text-slate-500">{t.recentT}</span>
-                        <button onClick={()=>saveRecent([])} className="min-h-[32px] text-[12px] font-semibold text-slate-400 underline">{t.clearT}</button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {recent.map(n=>(<button key={n} onClick={()=>{setDest(n);setRi(0);setOutage(false);}} className="min-h-[38px] px-3 rounded-full bg-amber-100 text-amber-900 text-[12.5px] font-semibold"><Ic n="pin"/>{SHORT[n]||n}</button>))}
-                      </div>
-                    </div>)}
-                  <div className="w-full text-left">
-                    <div className="px-1 mb-1.5"><span className="text-[12px] font-bold text-slate-500">{t.quickT}</span></div>
-                    <div className="flex flex-wrap gap-2">
-                    {DESTS.filter(d=>!recent.includes(d.name)).map(d=>(<button key={d.name} onClick={()=>{setDest(d.name);setRi(0);setOutage(false);}} className="min-h-[38px] px-3 rounded-full bg-slate-100 text-slate-700 text-[12.5px] font-semibold"><Ic n="pin"/>{SHORT[d.name]||d.name}</button>))}
-                  </div>
-                  </div>
                 </div>)}
               {landing && origin0 && <NearestCard t={t} lang={lang} me={origin0}/>}
               {route && <>
