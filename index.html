@@ -155,6 +155,9 @@ const liftCount = (r)=>{
   return n;
 };
 const totalMin = r => r.steps.reduce((a,x)=>a+x.m,0);
+// Real walk from the person's GPS position to the first station (straight line x1.25); null when no position.
+const startWalk=(r,origin)=>{ if(!origin) return null; const f=r.steps.find(x=>x.k==="walk"&&x.st&&!x.end); if(!f) return null; const S=STATIONS.find(x=>x.id===f.st); const e=S&&pickEnt(S,r,false); const tgt=(e&&e.ll)||(S&&S.pos); if(!tgt) return null; const m=distM(origin,tgt); return {m,min:walkMin(m),sample:f.m}; };
+const totalMinO=(r,origin)=>{ const w=startWalk(r,origin); return totalMin(r)+(w?w.min-w.sample:0); };
 const DESTS = [
   { name:"Whitney Museum", sp:{biz:"Sample Café",walk:2}, routes:WHITNEY, blocked:[{lines:["4","L"],m:31,at:"14 St-Union Sq"}] },
   { name:"American Museum of Natural History", routes:[], ns:{stairs:"81 St-Museum of Natural History",near:"59 St-Columbus Circle",dist:"0.9 mi",walk:18} },
@@ -358,13 +361,14 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin}){
   route.steps.forEach((st,si)=>{
     if(st.k==="walk" && st.st && !st.end && !entDone){
       entDone=true;
-      items.push({key:"ent",geo:near.ll?{ll:near.ll,r:50}:null,title:t.go(corner),time:t.mn(st.m),body:(<>
+      const sw=startWalk(route,origin);
+      items.push({key:"ent",geo:near.ll?{ll:near.ll,r:50}:null,title:t.go(corner),time:t.mn(sw?sw.min:st.m),body:(<>
         {near.photo && (
           <div className="relative rounded-xl overflow-hidden">
             <img src={near.photo} alt={near.s} className="w-full h-44 object-cover"/>
             {near.src==="own" && <div className="absolute top-2 left-2 text-[12px] font-bold rounded-full px-2.5 py-1 shadow bg-emerald-600 text-white"><Ic n="check"/>{t.srcOwn}</div>}
           </div>)}
-        <p className="text-[13px] font-semibold text-slate-700"><Ic n="walk"/>{t.walkIn(near.ft,near.m)}</p>
+        <p className="text-[13px] font-semibold text-slate-700"><Ic n="walk"/>{sw?(fmtD(sw.m)+" · "+t.mn(sw.min)):t.walkIn(near.ft,near.m)}</p>
         <a href={mapUrl(near,S,origin)} target="_blank" rel="noopener" className="flex items-center justify-center gap-2 min-h-[48px] rounded-xl bg-blue-600 text-white text-[14px] font-bold shadow"><Ic n="pin" m=""/>{MAPL[String(lang).toLowerCase()]||MAPL.en} ↗</a>
         <SvRow e={near} lang={lang} hl={line}/>
         <div className="flex gap-2.5 bg-slate-50 rounded-xl p-3"><span className="text-lg"><Ic n="pin"/></span><p className="text-[13px] text-slate-700 leading-relaxed">{d.lm}</p></div>
@@ -621,6 +625,7 @@ function App(){
   const [from,setFrom] = useState(null);
   const [outage,setOutage] = useState(false);
   const [chainDown,setChainDown] = useState(false);
+  const origin0 = from===null&&loc&&loc.st==="ok"&&loc.me?loc.me:null;
   const rr = chainDown && !!route && route.steps.some(x=>x.k==="walk"&&x.st==="jay");
   const landing = !route && (!dest.trim() || fld==="to");
   const [adHidden,setAdHidden] = useState(false);
@@ -681,7 +686,7 @@ function App(){
                       <div className="flex gap-1">{rt.lines.map(l=>(
                         <LineBadge key={l} l={l}/>))}</div>
                       <div className="flex-1">
-                        <div className="text-lg font-extrabold text-slate-900 leading-tight">{t.mn(totalMin(rt))}</div>
+                        <div className="text-lg font-extrabold text-slate-900 leading-tight">{t.mn(totalMinO(rt,origin0))}</div>
                         <div className="text-[12px] text-slate-500">{t.xfer(rt.steps.filter(x=>x.k==="xf").length)}</div>
                       </div>
                       <span className={"text-xs font-bold rounded-full px-2.5 py-1 "+(rt.warn?"bg-amber-50 text-amber-700":"bg-emerald-50 text-emerald-700")}>{rt.warn?<Ic n="alert" m=""/>:<><Ic n="check" m="mr-0.5"/><Ic n="elevator" m=""/></>}</span>
@@ -778,7 +783,7 @@ function App(){
                 <div className="flex items-center justify-between gap-3 bg-emerald-600 text-white rounded-2xl px-4 py-2">
                   <div>
                     <div className="text-[12px] font-semibold text-emerald-50">{t.total}</div>
-                    <div className="text-[22px] font-extrabold leading-none mt-0.5 tabular-nums">{t.mn(totalMin(route))}</div>
+                    <div className="text-[22px] font-extrabold leading-none mt-0.5 tabular-nums">{t.mn(totalMinO(route,origin0))}</div>
                   </div>
                   <div className="text-right">
                     <div className="flex gap-1 justify-end">{route.lines.map(l=>(<LineBadge key={l} l={l} ring/>))}</div>
@@ -799,7 +804,7 @@ function App(){
                 const S=STATIONS.find(x=>x.id===f.st);
                 const near=pickEnt(S,route,chainDown);
                 if(!near) return <NoEntranceCard t={t} S={S} setCd={chainDown?setChainDown:null}/>;
-                return <FollowAlong key={f.p+"|"+ri} t={t} S={S} near={near} lang={lang} route={route} cd={chainDown} setCd={setChainDown} goStation={goStation} origin={from===null&&loc&&loc.st==="ok"&&loc.me?loc.me:null}/>;
+                return <FollowAlong key={f.p+"|"+ri} t={t} S={S} near={near} lang={lang} route={route} cd={chainDown} setCd={setChainDown} goStation={goStation} origin={origin0}/>;
               })()}
               {route && <p className="text-[12px] text-slate-400 px-1">{t.sample}</p>}
 
