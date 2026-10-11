@@ -165,6 +165,13 @@ const periodOf=w=>{ const d=new Date(w), dw=d.getUTCDay(), h=d.getUTCHours(); re
 const recMs=v=>{ const m=/^(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):\d+\s*(AM|PM)/i.exec(v||""); if(!m) return null; let h=(+m[4])%12; if(/PM/i.test(m[6])) h+=12; return Date.UTC(+m[3],+m[1]-1,+m[2],h,+m[5]); };
 const fmtWall=(w,lang)=>{ try{ return new Date(w).toLocaleTimeString(lang==="KO"?"ko-KR":"en-US",{hour:"numeric",minute:"2-digit",timeZone:"UTC"}); }catch(e){ return ""; } };
 const wallStr=w=>new Date(w).toISOString().slice(0,16);
+const DEXT={EN:{arrive:"Arrive by",done:"Done",cancel:"Cancel",late:"Can't arrive by then — showing leave now instead",lb:"Leave by"},
+KO:{arrive:"도착",done:"완료",cancel:"취소",late:"그 시간까지는 도착할 수 없어요 — 지금 출발 기준으로 보여드려요",lb:"출발 시각"},
+ES:{arrive:"Llegar a las",done:"Listo",cancel:"Cancelar",late:"No llegas a esa hora — se muestra salir ahora",lb:"Salir a las"},
+ZH:{arrive:"到达时间",done:"完成",cancel:"取消",late:"赶不上那个时间 — 已改为现在出发",lb:"出发时间"},
+RU:{arrive:"Прибыть к",done:"Готово",cancel:"Отмена",late:"К этому времени не успеть — показан выезд сейчас",lb:"Выехать в"},
+BN:{arrive:"পৌঁছানোর সময়",done:"হয়েছে",cancel:"বাতিল",late:"ওই সময়ে পৌঁছানো যাবে না — এখনই রওনা দেখানো হচ্ছে",lb:"রওনার সময়"},
+FR:{arrive:"Arriver à",done:"OK",cancel:"Annuler",late:"Impossible d'arriver à cette heure — départ immédiat affiché",lb:"Partir à"}};
 const DEPT={EN:{leave:"Leave",now:"Now",at:"Depart at",w:"Weekday",a:"Saturday",u:"Sunday",d:"daytime",n:"late-night (longer waits)",up:"Planned outages included"},
 KO:{leave:"출발",now:"지금",at:"출발 시간",w:"평일",a:"토요일",u:"일요일",d:"낮 시간표",n:"심야 시간표 (배차 간격 김)",up:"예정된 점검 반영"},
 ES:{leave:"Salida",now:"Ahora",at:"Salir a las",w:"Entre semana",a:"Sábado",u:"Domingo",d:"horario diurno",n:"horario nocturno (esperas más largas)",up:"Incluye obras programadas"},
@@ -800,7 +807,9 @@ function NearestCard({t,lang,me}){
 }
 function App(){
   const [lang,setLang] = useState("EN");
-  const [dep,setDep] = useState("");
+  const [dep0,setDep] = useState(""); const [dmode,setDmode] = useState("leave"); const [arrT,setArrT] = useState(""); const [arrDep,setArrDep] = useState(""); const [arrLate,setArrLate] = useState(false);
+  const [sheet,setSheet] = useState(false); const [sMode,setSMode] = useState("now"); const [sVal,setSVal] = useState("");
+  const dep = dmode==="arrive"?arrDep:dep0;
   const [q,setQ] = useState("");
   const [sel,setSel] = useState(STATIONS[0]);
   const [saved,setSaved] = useState({});
@@ -830,6 +839,8 @@ function App(){
   const liveT = useMemo(()=>{ if(twDep==null||!live.all) return live; const out={},list=[]; live.all.forEach(x=>{ const a=recMs(x.outagedate), e=recMs(x.estimatedreturntoservice); if((a==null||a<=twDep)&&(e==null||e>twDep)){ out[x.equipment]=x; list.push(x); } }); return {...live,out,list}; },[live,twDep]);
   LIVE = live.st==="err" ? {} : liveT.out;
   const dt = DEPT[String(lang).toUpperCase()]||DEPT.EN;
+  const dx = DEXT[String(lang).toUpperCase()]||DEXT.EN;
+  const fmtDT=v=>{ const w=depWall(v); if(w==null) return ""; const same=wallStr(w).slice(0,10)===wallStr(nyWall(Date.now())).slice(0,10); try{ return new Date(w).toLocaleString(lang==="KO"?"ko-KR":"en-US",{timeZone:"UTC",weekday:same?undefined:"short",month:same?undefined:"short",day:same?undefined:"numeric",hour:"numeric",minute:"2-digit"}); }catch(e){ return v; } };
   const lv = LV[String(lang).toUpperCase()]||LV.EN;
   const [outOpen,setOutOpen] = useState(false);
   const [loc,setLoc] = useState(null); // {st:"ask"|"ok"|"denied"|"unavail", n, d, id, far}
@@ -907,6 +918,17 @@ function App(){
   const liveBar = (()=>{ const mins=live.at?Math.floor((Date.now()-live.at)/60000):0; const good=live.st==="ok"; const bad=live.st==="err"||live.st==="stale";
     return (<div className={"flex items-center gap-2 text-[12px] font-semibold px-1 "+(bad?"text-amber-800":"text-slate-500")}><span className={"w-2 h-2 rounded-full shrink-0 "+(good?"bg-green-500 pulse-dot":bad?"bg-amber-500":"bg-slate-300")}></span><span className="leading-snug">{live.st==="loading"?"…":live.st==="err"?lv.err:live.st==="stale"?lv.stale:lv.ok+" · "+(mins<1?t.now:t.ago(mins))}</span></div>); })();
   const liveOn = live.st==="ok"||live.st==="stale";
+  useEffect(()=>{
+    if(dmode!=="arrive"||!arrT||!destPl||!destPl.ll||!originLL){ setArrDep(""); setArrLate(false); return; }
+    const tgt=depWall(arrT); if(tgt==null) return;
+    const tot=pkx=>{ const rs=genRoutes(originLL,destPl.ll,destPl.name,pkx); return rs.length?Math.min(...rs.map(r=>totalMinO(r,originLL))):null; };
+    let T=tot(periodOf(tgt)); if(T==null){ setArrDep(""); setArrLate(false); return; }
+    let d=tgt-T*60000; const p2=periodOf(d);
+    if(p2!==periodOf(tgt)){ const T2=tot(p2); if(T2!=null){ T=T2; d=tgt-T*60000; } }
+    if(d<nyWall(Date.now())){ setArrDep(""); setArrLate(true); } else { setArrDep(wallStr(d)); setArrLate(false); }
+  },[dmode,arrT,destPl&&destPl.name,originLL&&originLL[0],originLL&&originLL[1]]);
+  const [,setTk] = useState(0);
+  useEffect(()=>{ const iv=setInterval(()=>setTk(x=>x+1),30000); return ()=>clearInterval(iv); },[]);
   const [rtv,setRtv] = useState(0);
   RTON=!dep;
   useEffect(()=>{
@@ -995,13 +1017,22 @@ function App(){
               </div>
             </div>
             <div className="mt-2 pt-2 border-t border-slate-100 px-1">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[12px] font-semibold text-slate-400 mr-0.5">{dt.leave}</span>
-                <button onClick={()=>setDep("")} className={"min-h-[34px] px-3 rounded-full text-[12px] font-bold "+(!dep?"bg-emerald-600 text-white":"bg-slate-100 text-slate-700")}>{dt.now}</button>
-                <button onClick={()=>{ if(!dep){ const w=nyWall(Date.now())+30*60000; setDep(wallStr(w-(w%900000))); } }} className={"min-h-[34px] px-3 rounded-full text-[12px] font-bold "+(dep?"bg-emerald-600 text-white":"bg-slate-100 text-slate-700")}>{dt.at}</button>
-                {dep && <input type="datetime-local" value={dep} min={wallStr(nyWall(Date.now()))} onChange={e=>setDep(e.target.value)} className="min-h-[34px] rounded-lg bg-slate-50 px-2 text-[13px] font-semibold text-slate-800"/>}
-              </div>
-              {(dep||pk!=="wd") && <p className="text-[12px] text-slate-500 mt-1.5 leading-snug">{dt[pk[0]]} · {dt[pk[1]]}{dep?" · "+dt.up:""}</p>}
+              <button onClick={()=>{ const w=nyWall(Date.now())+30*60000; setSMode(dmode==="arrive"&&arrT?"arrive":dep0?"leave":"now"); setSVal((dmode==="arrive"&&arrT)?arrT:dep0||wallStr(w-(w%900000))); setSheet(true); }} className="min-h-[38px] px-3.5 rounded-full text-[13px] font-bold bg-slate-100 text-slate-800 inline-flex items-center gap-1.5"><span className="tabular-nums">{dmode==="arrive"&&arrT?dx.arrive+" "+fmtDT(arrT):dep0?dt.leave+" "+fmtDT(dep0):dt.leave+" "+dt.now.toLowerCase()+" · "+fmtWall(nyWall(Date.now()),lang)}</span><span className="text-slate-400 text-[11px]">▾</span></button>
+              <p className="text-[12px] text-slate-500 mt-1.5 leading-snug">{dt[pk[0]]} · {dt[pk[1]]}{dep?" · "+dt.up:""}</p>
+              {dmode==="arrive"&&arrT&&arrLate && <p className="text-[12px] font-semibold text-amber-800 mt-1 leading-snug">{dx.late}</p>}
+              {dmode==="arrive"&&arrT&&!arrLate&&arrDep && <p className="text-[12px] font-bold text-emerald-700 mt-1 leading-snug">{dx.lb}: {fmtDT(arrDep)}</p>}
+              {sheet && (
+                <div className="fixed inset-0 z-[100] flex items-end justify-center" onClick={()=>setSheet(false)}>
+                  <div className="absolute inset-0 bg-black/40"></div>
+                  <div className="relative w-full max-w-[400px] bg-white rounded-t-3xl p-4 pb-6 space-y-4" onClick={e=>e.stopPropagation()}>
+                    <div className="flex gap-1.5">{[["now",dt.now],["leave",dt.leave],["arrive",dx.arrive]].map(([k,l])=>(<button key={k} onClick={()=>setSMode(k)} className={"flex-1 min-h-[40px] rounded-full text-[13px] font-bold "+(sMode===k?"bg-emerald-600 text-white":"bg-slate-100 text-slate-700")}>{l}</button>))}</div>
+                    {sMode!=="now" && <input type="datetime-local" value={sVal} min={wallStr(nyWall(Date.now()))} onChange={e=>setSVal(e.target.value)} className="w-full min-h-[48px] rounded-xl bg-slate-50 px-3 text-[16px] font-semibold text-slate-800"/>}
+                    <div className="flex gap-2">
+                      <button onClick={()=>setSheet(false)} className="flex-1 min-h-[44px] rounded-xl bg-slate-100 text-slate-700 text-[14px] font-bold">{dx.cancel}</button>
+                      <button disabled={sMode!=="now"&&!sVal} onClick={()=>{ if(sMode==="now"){ setDmode("leave"); setDep(""); } else if(sMode==="leave"){ setDmode("leave"); setDep(sVal); } else { setDmode("arrive"); setArrT(sVal); } setSheet(false); }} className="flex-1 min-h-[44px] rounded-xl bg-emerald-600 text-white text-[14px] font-bold disabled:opacity-40">{dx.done}</button>
+                    </div>
+                  </div>
+                </div>)}
             </div>
             {fld && (
               <div className="absolute z-50 left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-xl overflow-hidden">
