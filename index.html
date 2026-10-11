@@ -437,7 +437,7 @@ const GEO={
   bn:{auto:d=>"আপনার অবস্থান ট্র্যাক হচ্ছে · "+d+" বাকি। পৌঁছালে ধাপটি নিজে থেকেই শেষ হবে।",manual:"ভূগর্ভে GPS কাজ করে না। এই ধাপ শেষ হলে বোতাম চাপুন।",use:"আমার অবস্থান ব্যবহার করুন",sim:"পৌঁছানো সিমুলেট করুন",hint:"ঐচ্ছিক: লিফটের কাছে এলে পরের ধাপ প্রস্তাব করব।",wait:"অবস্থান খোঁজা হচ্ছে…",away:m=>"লিফট থেকে প্রায় "+m+" মি।",denied:"অবস্থান পাওয়া যায়নি। নিচের বোতাম ব্যবহার করুন।",near:"আপনি লিফটের কাছে।",yes:"হ্যাঁ, পৌঁছেছি — পরের ধাপ"},
   fr:{auto:d=>"Suivi de votre position · à "+d+". Cette étape se termine toute seule à l'arrivée.",manual:"Sous terre, le GPS ne fonctionne pas. Touchez quand vous avez terminé cette étape.",use:"Utiliser ma position",sim:"Simuler l'arrivée",hint:"Facultatif : nous suggérons l'étape suivante quand vous êtes près de l'ascenseur.",wait:"Recherche de votre position…",away:m=>"À environ "+m+" m de l'ascenseur.",denied:"Position indisponible. Utilisez le bouton ci-dessous.",near:"Vous êtes à l'ascenseur.",yes:"Oui, j'y suis — étape suivante"}
 };
-function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin,cur0,onProg}){
+function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin,cur0,onProg,dest}){
   const rides=route.steps.filter(x=>x.k==="ride");
   const r0=rides[0]||{};
   const line=r0.l, dir=r0.dir;
@@ -558,6 +558,10 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin,cur0,o
           <p className="flex-1 text-[14px] font-bold text-emerald-800">{t.madeIt}</p>
           <button onClick={()=>{setCur(0);setExp({});}} className="min-h-[40px] px-3.5 rounded-xl bg-white text-slate-700 text-[12.5px] font-bold border border-emerald-200"><Ic n="reset"/>{t.restartT}</button>
         </div>)}
+      {fin && TICKETS[dest] && (()=>{ const x=TXD[String(lang).toUpperCase()]||TXD.EN; return (
+        <a href={TICKETS[dest]} target="_blank" rel="sponsored noopener" className="mt-2 flex items-center justify-between gap-2 min-h-[44px] rounded-xl bg-slate-50 border border-slate-200 px-3.5 text-[13px] font-bold text-slate-800">
+          <span>{x.b} ›</span><span className="text-[10.5px] font-semibold text-slate-400">{x.a}</span>
+        </a>); })()}
       {near.data && <p className="text-[12px] text-slate-400 mt-3">{t.dataNote("",/our own/.test(near.data),/samples/.test(near.data))}</p>}
     </section>);
 }
@@ -802,6 +806,17 @@ const GN={
   RU:{need:"Геопозиция выключена, не знаю, откуда вы начинаете. Разрешите геопозицию или введите станцию или место в поле «Откуда».",note:"По расписанию MTA на выбранное время отправления и данным о лифтах. Время пешком и на пересадки — оценка.",walk:(d,m)=>"Пешком может быть так же быстро: "+d+" · "+m+" мин"},
   BN:{need:"লোকেশন বন্ধ, তাই কোথা থেকে শুরু করবেন জানি না। লোকেশন চালু করুন বা From-এ স্টেশন বা জায়গার নাম লিখুন।",note:"আপনার রওনার সময়ের MTA সময়সূচি ও এলিভেটর ডেটা অনুযায়ী। হাঁটা ও বদলের সময় আনুমানিক।",walk:(d,m)=>"হেঁটে গেলেও প্রায় একই সময়: "+d+" · "+m+" মিনিট"},
   FR:{need:"La position est désactivée, je ne sais pas d'où vous partez. Autorisez la position ou saisissez une station ou un lieu dans Départ.",note:"D'après les horaires de la MTA pour votre heure de départ et les données d'ascenseurs. Les temps de marche et de correspondance sont estimés.",walk:(d,m)=>"À pied, ce peut être aussi rapide : "+d+" · "+m+" min"},
+};
+// 제휴 링크: 장소 이름 → URL. 비어 있으면 아무것도 표시되지 않아요. 예) "Queens Zoo":"https://..."
+const TICKETS={};
+const TXD={
+  EN:{b:"Skip the line — buy tickets",a:"Affiliate link"},
+  KO:{b:"줄 서지 않게 티켓 미리 사기",a:"제휴 링크"},
+  ES:{b:"Evita la fila: compra entradas",a:"Enlace de afiliado"},
+  ZH:{b:"免排队 — 提前购票",a:"联盟链接"},
+  RU:{b:"Без очереди — купить билеты",a:"Партнёрская ссылка"},
+  BN:{b:"লাইন এড়াতে টিকিট কিনুন",a:"অ্যাফিলিয়েট লিংক"},
+  FR:{b:"Évitez la file — billets",a:"Lien affilié"}
 };
 const RSM={
   EN:{t:"Trip in progress",go:"Continue",x:"Dismiss"},
@@ -1257,7 +1272,7 @@ function App(){
                 const S=stOf(f.st);
                 const near=pickEnt(S,route,chainDown);
                 if(!near) return <NoEntranceCard t={t} S={S} setCd={chainDown?setChainDown:null}/>;
-                return <FollowAlong key={f.p+"|"+ri} t={t} S={S} near={near} lang={lang} route={route} cd={chainDown} setCd={setChainDown} goStation={goStation} origin={origin0} cur0={resCur.current} onProg={saveTrip}/>;
+                return <FollowAlong key={f.p+"|"+ri} t={t} S={S} near={near} lang={lang} route={route} cd={chainDown} setCd={setChainDown} goStation={goStation} origin={origin0} cur0={resCur.current} onProg={saveTrip} dest={dest}/>;
               })()}
               {route && <p className="text-[12px] text-slate-400 px-1">{route.gen?(GN[String(lang).toUpperCase()]||GN.EN).note:t.sample}</p>}
 
