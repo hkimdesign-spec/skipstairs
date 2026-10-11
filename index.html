@@ -929,6 +929,7 @@ function App(){
   const mins = savedAt ? Math.max(0,Math.round((Date.now()-savedAt)/60000))+(offSim?25:0) : 0;
   const hhmm = savedAt ? new Date(savedAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}) : "";
   const [fromBlank,setFromBlank] = useState(false);
+  const [toBlank,setToBlank] = useState(false);
   const [recentP,setRecentP] = useState(()=>{ try{ const r=JSON.parse(localStorage.getItem("skipstairs:rp")||"[]"); if(Array.isArray(r)){ r.forEach(x=>{ if(x&&x.geo&&x.name) GEOP[x.name.toLowerCase()]=x; }); return r.filter(x=>x&&x.name).slice(0,8); } }catch(e){} return []; });
   const dst = DST[String(lang).toUpperCase()]||DST.EN;
   const dh = DHM[String(lang).toUpperCase()]||DHM.EN;
@@ -948,11 +949,11 @@ function App(){
     if(!fld) return;
     let off=false;
     setLoading(true);
-    const txt = fld==="from" ? (from||"") : dest;
+    const txt = fld==="from" ? (from||"") : (toBlank?"":dest);
     const exact = PLACES.some(x=>x.name.toLowerCase()===txt.trim().toLowerCase());
     const h = setTimeout(()=>searchPlaces(exact?"":txt).then(rs=>{ if(!off){ setFound(rs); setLoading(false); } }),250);
     return ()=>{ off=true; clearTimeout(h); };
-  },[dest,from,fld]);
+  },[dest,from,fld,toBlank]);
   const ov = !!fld;
   const [vv,setVv] = useState({h:0,top:0});
   useEffect(()=>{
@@ -1063,7 +1064,7 @@ function App(){
                 </div>
                 <div className={ov?(fld==="to"?"relative rounded-full bg-slate-100 pl-4 pr-10 py-2":"hidden"):"rounded-xl px-3 py-2 "+(fld==="to"?"bg-white ring-2 ring-emerald-600":"bg-slate-50")}>
                   <div className={ov?"hidden":"text-[12px] font-semibold text-slate-400"}>{t.to}</div>
-                  <input value={dest} onChange={e=>{setDest(e.target.value);setRi(0);setOutage(false);}} onFocus={e=>{setFld("to");e.target.select();}} onBlur={()=>setTimeout(()=>{endHome();setFld(f=>f==="to"?null:f);},150)}
+                  <input value={toBlank?"":dest} onChange={e=>{setToBlank(false);setDest(e.target.value);setRi(0);setOutage(false);}} onFocus={e=>{setFld("to");if(dest.trim()!=="") setToBlank(true);}} onBlur={()=>setTimeout(()=>{endHome();setFld(f=>f==="to"?null:f);setToBlank(false);},150)}
                     placeholder={homeMode?dh.ph:t.ph} className="w-full bg-transparent text-[16px] font-semibold outline-none placeholder-slate-400"/>
                   {ov&&fld==="to"&&dest!==""&&<button onMouseDown={e=>{e.preventDefault();setDest("");setRi(0);}} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full text-slate-500 text-lg leading-none">×</button>}
                 </div>
@@ -1091,7 +1092,7 @@ function App(){
               <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain border-t border-slate-100 bg-white">
                 {fld==="from" && !homeMode && (fromBlank||from==="") && <button onMouseDown={()=>{setFrom(null);askLoc();if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();}} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50 text-[13px] font-semibold text-blue-700"><span className="text-lg"><Ic n="pin"/></span>{t.cur}</button>}
                 {loading && <div className="px-4 py-3 text-sm text-slate-400 animate-pulse">···</div>}
-                {!homeMode && (fld==="from"?(fromBlank||from===""):dest.trim()==="") && (
+                {!homeMode && (fld==="from"?(fromBlank||from===""):(toBlank||dest.trim()==="")) && (
                   <div className="w-full flex items-center hover:bg-slate-50">
                     <button onMouseDown={e=>{ e.preventDefault(); if(home) pick("Home"); else startHome(); }} className="flex-1 min-w-0 flex items-center gap-2.5 text-left px-3 py-2.5">
                       <span className="text-slate-500 text-lg"><Ic n="home" m=""/></span>
@@ -1102,7 +1103,7 @@ function App(){
                     </button>
                     {home && <button onMouseDown={e=>{ e.preventDefault(); startHome(); }} className="shrink-0 text-[12px] font-bold text-emerald-700 px-4 py-3">{dh.change}</button>}
                   </div>)}
-                {!homeMode && (fld==="from"?(fromBlank||from===""):dest.trim()==="") && recentP.length>0 && (<>
+                {!homeMode && (fld==="from"?(fromBlank||from===""):(toBlank||dest.trim()==="")) && recentP.length>0 && (<>
                   <div className="px-3 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">{dst.rec}</div>
                   {recentP.slice(0,3).map(x=>(
                     <button key={"rp"+x.name} onMouseDown={()=>pick(x.name,x)} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50">
@@ -1114,14 +1115,14 @@ function App(){
                       {FOCUS&&x.ll&&<span className="text-[11px] font-semibold text-slate-400 tabular-nums shrink-0">{fmtD(distM(FOCUS,x.ll))}</span>}
                     </button>))}
                 </>)}
-                {!homeMode && fld==="to" && dest.trim()==="" && (
+                {!homeMode && fld==="to" && (toBlank||dest.trim()==="") && (
                   <div className="px-3 pt-3 pb-4">
                     <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">{t.quickT}</div>
                     <div className="flex flex-wrap gap-2">
                       {DESTS.filter(d=>!recentP.slice(0,3).some(r=>r.name===d.name)).map(d=>(<button key={"qp"+d.name} onMouseDown={()=>pick(d.name,PLACES.find(q=>q.name===d.name)||{name:d.name,addr:"",c:"pin"})} className="min-h-[38px] px-3 rounded-full bg-slate-100 text-slate-700 text-[12.5px] font-semibold"><Ic n="pin"/>{SHORT[d.name]||d.name}</button>))}
                     </div>
                   </div>)}
-                {!loading && found.filter(x=>!((fld==="from"?(fromBlank||from===""):dest.trim()==="")&&(fld==="to"||recentP.length>0)&&!homeMode)).map(x=>(
+                {!loading && found.filter(x=>!((fld==="from"?(fromBlank||from===""):(toBlank||dest.trim()===""))&&(fld==="to"||recentP.length>0)&&!homeMode)).map(x=>(
                   <button key={x.name} onMouseDown={()=>pick(x.name,x)} className="w-full flex items-center gap-2.5 text-left px-3 py-2.5 hover:bg-slate-50">
                     <span className="text-slate-500 text-lg"><Ic n={x.c} m=""/></span>
                     <span className="flex-1 min-w-0">
