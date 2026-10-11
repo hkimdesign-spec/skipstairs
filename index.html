@@ -158,6 +158,7 @@ const totalMin = r => r.steps.reduce((a,x)=>a+x.m,0);
 // Real walk from the person's GPS position to the first station (straight line x1.25); null when no position.
 const startWalk=(r,origin)=>{ if(!origin) return null; const f=r.steps.find(x=>x.k==="walk"&&x.st&&!x.end); if(!f) return null; const S=stOf(f.st); const e=S&&pickEnt(S,r,false); const tgt=(e&&e.ll)||(S&&(S.pos||S.gpos)); if(!tgt) return null; const m=distM(origin,tgt); return {m,min:walkMin(m),sample:f.m}; };
 const ARR={EN:"Arrive",ES:"Llegada",ZH:"到达",RU:"Прибытие",BN:"পৌঁছাবেন",FR:"Arrivée",KO:"도착"};
+const OUTCHK={EN:"may affect this route",ES:"puede afectar esta ruta",ZH:"可能影响此路线",RU:"может повлиять на маршрут",BN:"এই রুটে প্রভাব পড়তে পারে",FR:"peut affecter cet itinéraire",KO:"이 경로에 영향 있을 수 있어요"};
 const arrAt=(min,lang)=>{ try{ return new Date(Date.now()+min*60000).toLocaleTimeString(lang==="KO"?"ko-KR":"en-US",{hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}); }catch(e){ return ""; } };
 const totalMinO=(r,origin)=>{ const w=startWalk(r,origin); return totalMin(r)+(w?w.min-w.sample:0); };
 const DESTS = [
@@ -849,31 +850,33 @@ function App(){
     return (<div className={"flex items-center gap-2 text-[12px] font-semibold px-1 "+(bad?"text-amber-800":"text-slate-500")}><span className={"w-2 h-2 rounded-full shrink-0 "+(good?"bg-green-500 pulse-dot":bad?"bg-amber-500":"bg-slate-300")}></span><span className="leading-snug">{live.st==="loading"?"…":live.st==="err"?lv.err:live.st==="stale"?lv.stale:lv.ok+" · "+(mins<1?t.now:t.ago(mins))}</span></div>); })();
   const liveOn = live.st==="ok"||live.st==="stale";
   const normN=x=>String(x||"").toLowerCase().replace(/\s+/g," ").trim();
-  const routeOuts = (route&&liveOn) ? (()=>{ const names=new Set(); route.steps.forEach(x=>{ if(x.k==="ride"){ names.add(normN(x.a)); names.add(normN(x.b)); } if(x.k==="xf") names.add(normN(x.p)); if(x.st){ const S=stOf(x.st); if(S) names.add(normN(S.name)); } });
+  const routeOutsOf = route=>(route&&liveOn) ? (()=>{ const names=new Set(); route.steps.forEach(x=>{ if(x.k==="ride"){ names.add(normN(x.a)); names.add(normN(x.b)); } if(x.k==="xf") names.add(normN(x.p)); if(x.st){ const S=stOf(x.st); if(S) names.add(normN(S.name)); } });
     const dests=new Set(route.steps.filter(x=>x.k==="ride").map(x=>normN(x.b))); const ls=[...(route.lines||[])].map(x=>String(x).toUpperCase());
     const by={}; (live.list||[]).forEach(r=>{ const k=normN(r.station); const tn=String(r.trainno||"").toUpperCase(); if(names.has(k)&&(dests.has(k)||!tn||ls.some(l=>tn.includes(l)))){ (by[k]=by[k]||{S:{name:r.station},recs:[]}).recs.push(r); } });
     [...STATIONS,...Object.values(GSTA)].forEach(S=>{ const k=normN(S.name); if(names.has(k)){ (S.els||[]).filter(id=>LIVE[id]).forEach(id=>{ const r=LIVE[id]; const g=(by[k]=by[k]||{S:{name:S.name},recs:[]}); if(!g.recs.includes(r)) g.recs.push(r); }); } });
     return Object.values(by).map(o=>({...o,n:o.recs.length})); })() : [];
   const DIRKW={MAN:"manhattan-bound",BK:"brooklyn-bound",CI:"coney island-bound",QNS:"queens-bound",CAN:"canarsie-bound",CH:"church av-bound"};
-  const outInfo = (()=>{ if(!routeOuts.length) return null; const mine=(route.lines||[]).map(x=>String(x).toUpperCase()); const myDir=DIRKW[(route.steps.find(x=>x.k==="ride")||{}).dir];
+  const outInfoOf = (route,routeOuts)=>{ if(!routeOuts.length) return null; const mine=(route.lines||[]).map(x=>String(x).toUpperCase()); const myDir=DIRKW[(route.steps.find(x=>x.k==="ride")||{}).dir];
     const recUn=r=>{ const sv=String(r.serving||""); const nl=namedLines(sv); const lineUn=nl.length>0&&!nl.some(x=>mine.includes(x))&&!mine.some(l=>new RegExp("\\b"+l+"\\b").test(sv)); const dirUn=!!myDir&&/-bound/i.test(sv)&&!sv.toLowerCase().includes(myDir); return lineUn||dirUn; };
-    const per=routeOuts.map(o=>({o,unrel:o.recs.every(recUn)})); return {mine,per,allUnrel:per.every(x=>x.unrel)}; })();
+    const per=routeOuts.map(o=>({o,unrel:o.recs.every(recUn)})); return {mine,per,allUnrel:per.every(x=>x.unrel)}; };
+  const routeOuts = routeOutsOf(route); const outInfo = outInfoOf(route,routeOuts);
+  const outCount = rt=>{ const ro=routeOutsOf(rt); const oi=outInfoOf(rt,ro); return (!oi||oi.allUnrel)?0:ro.reduce((n,o)=>n+o.n,0); };
   const results = useMemo(()=>STATIONS.filter(s=>s.name.toLowerCase().includes(q.toLowerCase())),[q]);
 
   const routeSel = route ? (
 <div>
                 <h3 className="text-sm font-bold text-slate-800 mb-2 px-1"><Ic n="elevator"/>{t.routes}</h3>
                 <div className="space-y-2">
-                  {routes.map((rt,i)=>(
-                    <button key={i} onClick={()=>setRi(i)} className={"w-full flex items-center gap-3 rounded-2xl p-3.5 text-left bg-white shadow-sm transition "+(ri===i?"ring-2 ring-blue-500":"ring-1 ring-slate-200")}>
+                  {routes.map((rt,i)=>{ const oc=outCount(rt); return (
+                    <button key={i} onClick={()=>setRi(i)} className={"w-full flex items-center gap-3 rounded-2xl p-3.5 text-left shadow-sm transition "+(oc?"bg-amber-50/60 ":"bg-white ")+(ri===i?"ring-2 ring-blue-500":oc?"ring-1 ring-amber-300":"ring-1 ring-slate-200")}>
                       <div className="flex gap-1">{rt.lines.map(l=>(
                         <LineBadge key={l} l={l}/>))}</div>
                       <div className="flex-1">
                         <div className="text-lg font-extrabold text-slate-900 leading-tight">{t.mn(totalMinO(rt,origin0))}</div>
-                        <div className="text-[12px] text-slate-500">{t.xfer(rt.steps.filter(x=>x.k==="xf").length)} · {ARR[lang]} {arrAt(totalMinO(rt,origin0),lang)}</div>
+                        <div className="text-[12px] text-slate-500">{t.xfer(rt.steps.filter(x=>x.k==="xf").length)} · {ARR[lang]} {arrAt(totalMinO(rt,origin0),lang)}</div>{oc>0 && <div className="text-[12px] font-bold text-amber-800 mt-0.5">{lv.out(oc)} · {OUTCHK[lang]||OUTCHK.EN}</div>}
                       </div>
-                      <span className={"text-xs font-bold rounded-full px-2.5 py-1 "+(rt.warn?"bg-amber-50 text-amber-700":"bg-emerald-50 text-emerald-700")}>{rt.warn?<Ic n="alert" m=""/>:<><Ic n="check" m="mr-0.5"/><Ic n="elevator" m=""/></>}</span>
-                    </button>))}
+                      <span className={"text-xs font-bold rounded-full px-2.5 py-1 "+((rt.warn||oc)?"bg-amber-100 text-amber-800":"bg-emerald-50 text-emerald-700")}>{(rt.warn||oc)?<><Ic n="alert" m="mr-0.5"/>{oc?oc:""}</>:<><Ic n="check" m="mr-0.5"/><Ic n="elevator" m=""/></>}</span>
+                    </button>);})}
                 </div>
                 
               </div>
