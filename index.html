@@ -1198,7 +1198,6 @@ function App(){
                   </div>
                   <p className="text-[12px] text-slate-400">{t.nsNote}</p>
                 </div>)}
-              {landing && origin0 && <NearestCard t={t} lang={lang} me={origin0}/>}
               {!route && (!dest.trim() || fld==="to") && (
                 <div className="bg-white rounded-3xl shadow-md p-5 flex flex-col items-center text-center gap-3">
                   <Elly mood="hello" size={84}/>
@@ -1220,6 +1219,7 @@ function App(){
                   </div>
                   </div>
                 </div>)}
+              {landing && origin0 && <NearestCard t={t} lang={lang} me={origin0}/>}
               {route && <>
               {dd && dd.sp && !adHidden && (
                 <section className="bg-[#E4EAE5] rounded-3xl p-4">
