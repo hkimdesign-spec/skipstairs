@@ -437,14 +437,14 @@ const GEO={
   bn:{auto:d=>"আপনার অবস্থান ট্র্যাক হচ্ছে · "+d+" বাকি। পৌঁছালে ধাপটি নিজে থেকেই শেষ হবে।",manual:"ভূগর্ভে GPS কাজ করে না। এই ধাপ শেষ হলে বোতাম চাপুন।",use:"আমার অবস্থান ব্যবহার করুন",sim:"পৌঁছানো সিমুলেট করুন",hint:"ঐচ্ছিক: লিফটের কাছে এলে পরের ধাপ প্রস্তাব করব।",wait:"অবস্থান খোঁজা হচ্ছে…",away:m=>"লিফট থেকে প্রায় "+m+" মি।",denied:"অবস্থান পাওয়া যায়নি। নিচের বোতাম ব্যবহার করুন।",near:"আপনি লিফটের কাছে।",yes:"হ্যাঁ, পৌঁছেছি — পরের ধাপ"},
   fr:{auto:d=>"Suivi de votre position · à "+d+". Cette étape se termine toute seule à l'arrivée.",manual:"Sous terre, le GPS ne fonctionne pas. Touchez quand vous avez terminé cette étape.",use:"Utiliser ma position",sim:"Simuler l'arrivée",hint:"Facultatif : nous suggérons l'étape suivante quand vous êtes près de l'ascenseur.",wait:"Recherche de votre position…",away:m=>"À environ "+m+" m de l'ascenseur.",denied:"Position indisponible. Utilisez le bouton ci-dessous.",near:"Vous êtes à l'ascenseur.",yes:"Oui, j'y suis — étape suivante"}
 };
-function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin}){
+function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin,cur0,onProg}){
   const rides=route.steps.filter(x=>x.k==="ride");
   const r0=rides[0]||{};
   const line=r0.l, dir=r0.dir;
   const near = near0.chain ? {...near0, chain:near0.chain.map(c=>c.opts?{...c,opts:c.opts.filter(o=>typeof o==="string"||((!o.l||o.l.includes(line))&&(!dir||!o.k||o.k.includes(dir))))}:c)} : near0;
   const d=txOf(S,lang);
   const prog=!!route.progress;
-  const [cur,setCur]=useState(0);
+  const [cur,setCur]=useState(cur0||0);
   const [exp,setExp]=useState({});
   const firstRun=useRef(true);
   useEffect(()=>{ if(firstRun.current){ firstRun.current=false; return; } const el=document.getElementById("fs-"+cur); if(el&&el.scrollIntoView) el.scrollIntoView({behavior:"smooth",block:"start"}); },[cur]);
@@ -527,6 +527,7 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin}){
     return stopW;
   },[tk]);
   const N=items.length, fin=prog&&cur>=N;
+  useEffect(()=>{ if(onProg) onProg(cur,N); },[cur]);
   const lab=(it)=>typeof it.title==="string"?it.title:(it.label||"");
   return (
     <section className="bg-white rounded-3xl shadow-md p-4">
@@ -802,6 +803,15 @@ const GN={
   BN:{need:"লোকেশন বন্ধ, তাই কোথা থেকে শুরু করবেন জানি না। লোকেশন চালু করুন বা From-এ স্টেশন বা জায়গার নাম লিখুন।",note:"আপনার রওনার সময়ের MTA সময়সূচি ও এলিভেটর ডেটা অনুযায়ী। হাঁটা ও বদলের সময় আনুমানিক।",walk:(d,m)=>"হেঁটে গেলেও প্রায় একই সময়: "+d+" · "+m+" মিনিট"},
   FR:{need:"La position est désactivée, je ne sais pas d'où vous partez. Autorisez la position ou saisissez une station ou un lieu dans Départ.",note:"D'après les horaires de la MTA pour votre heure de départ et les données d'ascenseurs. Les temps de marche et de correspondance sont estimés.",walk:(d,m)=>"À pied, ce peut être aussi rapide : "+d+" · "+m+" min"},
 };
+const RSM={
+  EN:{t:"Trip in progress",go:"Continue",x:"Dismiss"},
+  KO:{t:"진행 중인 안내",go:"이어가기",x:"닫기"},
+  ES:{t:"Viaje en curso",go:"Continuar",x:"Descartar"},
+  ZH:{t:"进行中的行程",go:"继续",x:"关闭"},
+  RU:{t:"Поездка в процессе",go:"Продолжить",x:"Скрыть"},
+  BN:{t:"চলমান যাত্রা",go:"চালিয়ে যান",x:"বাদ দিন"},
+  FR:{t:"Trajet en cours",go:"Reprendre",x:"Ignorer"}
+};
 const FPK={"American Museum of Natural History": "museum", "Children's Museum of Manhattan": "kids", "Central Park Zoo": "zoo", "Hudson River Park (Pier 51)": "water", "Brooklyn Children's Museum": "kids", "Brooklyn Botanic Garden": "garden", "Prospect Park Zoo": "zoo", "Brooklyn Museum": "museum", "New York Transit Museum": "train", "Brooklyn Bridge Park": "water", "New York Hall of Science": "science", "Queens Zoo": "zoo", "Queens Botanical Garden": "garden", "Museum of the Moving Image": "film"};
 const FPL=[["M","American Museum of Natural History"],["M","Children's Museum of Manhattan"],["M","Central Park Zoo"],["M","Hudson River Park (Pier 51)"],
 ["B","Brooklyn Children's Museum"],["B","Brooklyn Botanic Garden"],["B","Prospect Park Zoo"],["B","Brooklyn Museum"],["B","New York Transit Museum"],["B","Brooklyn Bridge Park"],
@@ -993,6 +1003,11 @@ function App(){
   const dh = DHM[String(lang).toUpperCase()]||DHM.EN;
   const [home,setHome] = useState(()=>{ try{ const h=JSON.parse(localStorage.getItem("skipstairs:home")||"null"); if(h&&Array.isArray(h.ll)&&h.ll.length===2) return h; }catch(e){} return null; });
   if(home) GEOP["home"]={name:"Home",title:"Home",addr:home.addr||"",ll:home.ll,c:"pin",geo:true}; else delete GEOP["home"];
+  const [trip,setTrip] = useState(()=>{ try{ const x=JSON.parse(localStorage.getItem("skipstairs:trip")||"null"); if(x&&x.dest&&x.cur>=1&&Date.now()-x.t<3*3600*1000) return x; }catch(e){} return null; });
+  const resCur = useRef(0);
+  const saveTrip = (cur,N)=>{ resCur.current=0; try{ if(cur>=1&&cur<N){ const o={dest,from,ri,cur,N,t:Date.now()}; localStorage.setItem("skipstairs:trip",JSON.stringify(o)); setTrip(o); } else { localStorage.removeItem("skipstairs:trip"); setTrip(null); } }catch(e){} };
+  const dropTrip = ()=>{ try{ localStorage.removeItem("skipstairs:trip"); }catch(e){} setTrip(null); };
+  const resumeTrip = ()=>{ if(!trip) return; resCur.current=trip.cur; setFrom(trip.from===undefined?null:trip.from); setRi(trip.ri||0); setDest(trip.dest); setTrip(null); window.scrollTo({top:0}); };
   const [homeMode,setHomeMode] = useState(false); const homeRef = useRef(null);
   const startHome = ()=>{ const f=fld; const prev=f==="from"?from:dest; homeRef.current={fld:f,prev}; setHomeMode(true); if(f==="from"){ setFromBlank(false); setFrom(""); } else { setDest(""); } };
   const endHome = ()=>{ const h=homeRef.current; if(!h) return; homeRef.current=null; setHomeMode(false); if(h.fld==="from") setFrom(h.prev); else setDest(h.prev); };
@@ -1087,13 +1102,13 @@ function App(){
         {/* Header */}
         <header className="relative z-50 px-5 pt-5 pb-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
+            <button type="button" aria-label="Home" onClick={()=>{ if(document.activeElement&&document.activeElement.blur) document.activeElement.blur(); setFld(null); setDest(""); setFrom(null); setFromBlank(false); setToBlank(false); setRi(0); setOutage(false); setMode("trip"); window.scrollTo({top:0,behavior:"smooth"}); }} className="flex items-center gap-2.5 text-left">
               <div className="shrink-0" style={{width:33,height:50}}>{!landing && <div className="fade-in"><Elly mood="basic" size={50} crop/></div>}</div>
               <div>
                 <h1 className="font-extrabold text-[21px] leading-tight text-slate-900 tracking-tight">{t.title}</h1>
                 <p className="text-[12.5px] text-slate-500 leading-snug max-w-[200px]">{t.sub}</p>
               </div>
-            </div>
+            </button>
             <label className="relative flex items-center bg-white border border-slate-200 text-slate-700 rounded-full text-xs font-semibold shadow-sm">
               <span className="pl-3 text-slate-500"><Ic n="globe" m=""/></span>
               <select value={lang} onChange={e=>setLang(e.target.value)} aria-label="Language"
@@ -1242,7 +1257,7 @@ function App(){
                 const S=stOf(f.st);
                 const near=pickEnt(S,route,chainDown);
                 if(!near) return <NoEntranceCard t={t} S={S} setCd={chainDown?setChainDown:null}/>;
-                return <FollowAlong key={f.p+"|"+ri} t={t} S={S} near={near} lang={lang} route={route} cd={chainDown} setCd={setChainDown} goStation={goStation} origin={origin0}/>;
+                return <FollowAlong key={f.p+"|"+ri} t={t} S={S} near={near} lang={lang} route={route} cd={chainDown} setCd={setChainDown} goStation={goStation} origin={origin0} cur0={resCur.current} onProg={saveTrip}/>;
               })()}
               {route && <p className="text-[12px] text-slate-400 px-1">{route.gen?(GN[String(lang).toUpperCase()]||GN.EN).note:t.sample}</p>}
 
@@ -1264,6 +1279,16 @@ function App(){
                   </div>
                   <p className="text-[12px] text-slate-400">{t.nsNote}</p>
                 </div>)}
+              {landing && !ov && trip && (()=>{ const r=RSM[String(lang).toUpperCase()]||RSM.EN; return (
+                <section className="bg-white rounded-3xl shadow-md p-4 border-l-4 border-emerald-500">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">{r.t}</p>
+                  <p className="text-[16px] font-extrabold text-slate-900 leading-tight mt-1">{trip.dest}</p>
+                  <p className="text-[12.5px] font-semibold text-slate-500 mt-0.5">{t.stepOf(trip.cur+1,trip.N)}</p>
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={resumeTrip} className="flex-1 min-h-[46px] rounded-xl bg-emerald-600 text-white text-[14px] font-bold">{r.go}</button>
+                    <button onClick={dropTrip} className="min-h-[46px] px-4 rounded-xl bg-slate-100 text-slate-600 text-[13px] font-bold">{r.x}</button>
+                  </div>
+                </section>); })()}
               {!route && (!dest.trim() || fld==="to") && (
                 <div className="bg-white rounded-3xl shadow-md p-5 flex flex-col items-center text-center gap-3">
                   <Elly mood="hello" size={84}/>
