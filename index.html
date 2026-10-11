@@ -129,6 +129,8 @@ const STATIONS = [
     EN:{lm:"Several step-free entrances, e.g. 7th Ave & 42 St (SE corner), 43 St & Broadway (NW corner) and the Port Authority Bus Terminal on 8th Ave. The platform elevator for each entrance still needs verification.",cafe:"Quiet café with nursing room, 4 min walk",deal:"10% off for families"}}},
 ];
 
+const BORO={jay:"Brooklyn",atl:"Brooklyn",lor:"Brooklyn",sev:"Brooklyn",ts:"Manhattan"};
+STATIONS.forEach(S=>{ S.boro=BORO[S.id]; });
 const txOf = (S,lang)=>({...S.tx.EN,...(S.tx[lang]||{})});
 const LM = {"lor": {"ES": "Dos ascensores de vidrio sin escalones bajan al entrepiso compartido: Lorimer St y Metropolitan Ave (esquina noroeste) y Metropolitan Ave y Union Ave (esquina sureste). Luego tome el ascensor del andén de su tren y su sentido.", "ZH": "两部无台阶玻璃电梯可通往共用夹层：Lorimer St 与 Metropolitan Ave 西北角，以及 Metropolitan Ave 与 Union Ave 东南角。然后按您的列车和方向乘站台电梯。", "RU": "Два лифта без ступенек (стеклянные) ведут на общий мезонин: Lorimer St и Metropolitan Ave (северо-западный угол) и Metropolitan Ave и Union Ave (юго-восточный угол). Затем возьмите лифт на платформу вашего поезда и направления.", "BN": "দুটি সিঁড়িবিহীন কাচের লিফট শেয়ার্ড মেজানাইনে নামায়: Lorimer St ও Metropolitan Ave (উত্তর-পশ্চিম কোণ) এবং Metropolitan Ave ও Union Ave (দক্ষিণ-পূর্ব কোণ)। তারপর আপনার ট্রেন ও দিকের প্ল্যাটফর্ম-লিফট নিন।", "FR": "Deux ascenseurs vitrés sans marches descendent à la mezzanine commune : Lorimer St et Metropolitan Ave (angle nord-ouest) et Metropolitan Ave et Union Ave (angle sud-est). Prenez ensuite l'ascenseur de quai de votre train et de votre direction.", "KO": "계단 없는 유리 엘리베이터 두 곳이 공용 중간층으로 이어져요: Lorimer St & Metropolitan Ave 북서쪽 코너, Metropolitan Ave & Union Ave 남동쪽 코너. 그다음 타는 열차와 방향에 맞는 승강장 엘리베이터를 타세요."}, "sev": {"ES": "Un ascensor de vidrio sin escalones en la esquina noroeste de 7 Ave y 9 St baja al entrepiso. Luego tome el ascensor del andén según su sentido.", "ZH": "7 Ave 与 9 St 西北角有一部无台阶玻璃电梯，可直达夹层；再按您的方向乘站台电梯。", "RU": "Лифт без ступенек (стеклянный) на северо-западном углу 7 Ave и 9 St ведёт на мезонин. Затем возьмите лифт на платформу нужного направления.", "BN": "7 Ave ও 9 St-এর উত্তর-পশ্চিম কোণে একটি সিঁড়িবিহীন কাচের লিফট মেজানাইনে নামায়। তারপর আপনার দিকের প্ল্যাটফর্ম-লিফট নিন।", "FR": "Un ascenseur vitré sans marches à l'angle nord-ouest de 7 Ave et 9 St descend à la mezzanine. Prenez ensuite l'ascenseur de quai de votre direction.", "KO": "7 Ave & 9 St 북서쪽 코너의 계단 없는 유리 엘리베이터가 중간층까지 내려가요. 그다음 가는 방향의 승강장 엘리베이터를 타세요."}, "atl": {"ES": "Dos entradas sin escalones con ascensores directos al andén: 4th Ave y Pacific St (esquina noreste) y la plaza frente al Barclays Center.", "ZH": "两处无台阶入口，电梯直达站台：4th Ave 与 Pacific St 东北角，以及巴克莱中心前的广场。", "RU": "Два входа без ступенек с лифтами прямо на платформу: 4th Ave и Pacific St (северо-восточный угол) и площадь перед Barclays Center.", "BN": "দুটি সিঁড়িবিহীন প্রবেশপথে লিফট সরাসরি প্ল্যাটফর্মে নামায়: 4th Ave ও Pacific St (উত্তর-পূর্ব কোণ) এবং Barclays Center-এর সামনের প্লাজা।", "FR": "Deux entrées sans marches avec ascenseurs descendant directement au quai : 4th Ave et Pacific St (angle nord-est) et la place devant le Barclays Center.", "KO": "플랫폼까지 바로 내려가는 엘리베이터가 있는 계단 없는 입구 두 곳: 4th Ave & Pacific St 북동쪽 코너, 바클레이스 센터 앞 광장."}, "ts": {"ES": "Varias entradas sin escalones, p. ej. 7th Ave y 42 St (esquina sureste), 43 St y Broadway (esquina noroeste) y la terminal de autobuses Port Authority en 8th Ave. El ascensor del andén de cada entrada aún debe verificarse.", "ZH": "多处无台阶入口，例如 7th Ave 与 42 St 东南角、43 St 与 Broadway 西北角，以及 8th Ave 上的 Port Authority 汽车总站。每个入口对应的站台电梯仍需核实。", "RU": "Несколько входов без ступенек, например 7th Ave и 42 St (юго-восточный угол), 43 St и Broadway (северо-западный угол) и автовокзал Port Authority на 8th Ave. Лифт на платформу для каждого входа ещё нужно проверить.", "BN": "একাধিক সিঁড়িবিহীন প্রবেশপথ, যেমন 7th Ave ও 42 St (দক্ষিণ-পূর্ব কোণ), 43 St ও Broadway (উত্তর-পশ্চিম কোণ) এবং 8th Ave-র Port Authority বাস টার্মিনাল। প্রতিটি প্রবেশপথের প্ল্যাটফর্ম-লিফট এখনও যাচাই করতে হবে।", "FR": "Plusieurs entrées sans marches, par exemple 7th Ave et 42 St (angle sud-est), 43 St et Broadway (angle nord-ouest) et la gare routière Port Authority sur 8th Ave. L'ascenseur de quai de chaque entrée reste à vérifier.", "KO": "계단 없는 입구가 여러 곳 있어요. 예: 7th Ave & 42 St 남동쪽, 43 St & Broadway 북서쪽, 8th Ave의 포트 오소리티 버스터미널. 각 입구의 승강장 엘리베이터는 아직 확인이 필요해요."}};
 STATIONS.forEach(S=>{ const m=LM[S.id]; if(m) Object.keys(m).forEach(L=>{ S.tx[L]={...(S.tx[L]||{}),lm:m[L]}; }); });
@@ -314,6 +316,8 @@ const LOC={
   BN:{finding:"অবস্থান খোঁজা হচ্ছে…",near:(n,d)=>"নিকটতম নমুনা স্টেশন: "+n+" · "+d,far:(n,d)=>"কাছে কোনো নমুনা স্টেশন নেই। নিকটতম: "+n+" · "+d,denied:"এই ভিউতে অবস্থান ব্লক করা। একটি নমুনা স্টেশন বেছে নিন:",unavail:"অবস্থান পাওয়া যায়নি। একটি নমুনা স্টেশন বেছে নিন:",view:"স্টেশন তথ্য"},
   FR:{finding:"Recherche de votre position…",near:(n,d)=>"Station d'exemple la plus proche : "+n+" · "+d,far:(n,d)=>"Aucune station d'exemple près de vous. La plus proche : "+n+" · "+d,denied:"La position est bloquée dans cette vue. Choisissez une station d'exemple :",unavail:"Position introuvable. Choisissez une station d'exemple :",view:"Infos station"}
 };
+const MAPL={en:"Walking directions",es:"Cómo llegar a pie",zh:"步行路线",ru:"Пешком до входа",bn:"হাঁটার পথ",fr:"Itinéraire à pied",ko:"도보 길찾기"};
+const mapUrl=(near,S)=>"https://www.google.com/maps/dir/?api=1&travelmode=walking&destination="+encodeURIComponent(near.ll?near.ll[0]+","+near.ll[1]:near.s+", "+(S.boro||"New York")+", NY");
 function distM(a,b){ const R=6371000,r=Math.PI/180; const x=Math.sin((b[0]-a[0])*r/2)**2+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin((b[1]-a[1])*r/2)**2; return 2*R*Math.asin(Math.sqrt(x)); }
 function fmtD(m){ const ft=m*3.28084; return ft<1000?(Math.max(10,Math.round(ft/10)*10))+" ft":(m/1609.344).toFixed(1)+" mi"; }
 function walkMin(m){ return Math.max(1,Math.ceil(m*1.25/80)); } // straight-line x1.25 street detour, ~3 mph
@@ -333,7 +337,6 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation}){
   const line=r0.l, dir=r0.dir;
   const near = near0.chain ? {...near0, chain:near0.chain.map(c=>c.opts?{...c,opts:c.opts.filter(o=>typeof o==="string"||((!o.l||o.l.includes(line))&&(!dir||!o.k||o.k.includes(dir))))}:c)} : near0;
   const d=txOf(S,lang);
-  const [fb,setFb]=useState(null);
   const prog=!!route.progress;
   const [cur,setCur]=useState(0);
   const [exp,setExp]=useState({});
@@ -374,17 +377,9 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation}){
             {near.src==="own" && <div className="absolute top-2 left-2 text-[12px] font-bold rounded-full px-2.5 py-1 shadow bg-emerald-600 text-white"><Ic n="check"/>{t.srcOwn}</div>}
           </div>)}
         <p className="text-[13px] font-semibold text-slate-700"><Ic n="walk"/>{t.walkIn(near.ft,near.m)}</p>
+        <a href={mapUrl(near,S)} target="_blank" rel="noopener" className="flex items-center justify-center gap-2 min-h-[44px] rounded-xl bg-blue-50 text-blue-700 text-[13px] font-bold"><Ic n="pin" m=""/>{MAPL[String(lang).toLowerCase()]||MAPL.en} ↗</a>
         <SvRow e={near} lang={lang} hl={line}/>
         <div className="flex gap-2.5 bg-slate-50 rounded-xl p-3"><span className="text-lg"><Ic n="pin"/></span><p className="text-[13px] text-slate-700 leading-relaxed">{d.lm}</p></div>
-        {near.photo && (
-          <div className="flex items-center justify-between gap-3 pt-1">
-            {fb===null ? (<>
-              <span className="text-[12.5px] font-semibold text-slate-700">{t.ask}</span>
-              <span className="flex gap-2">
-                <button onClick={()=>setFb("yes")} className="min-h-[40px] px-4 rounded-xl bg-emerald-50 text-emerald-700 text-[13px] font-bold"><Ic n="up"/>{t.yes}</button>
-                <button onClick={()=>setFb("no")} className="min-h-[40px] px-4 rounded-xl bg-red-50 text-red-700 text-[13px] font-bold"><Ic n="down"/>{t.no}</button>
-              </span></>) : (<span className="text-[12.5px] font-semibold text-slate-600"><Ic n={fb==="yes"?"check":"info"}/>{fb==="yes"?t.thx:t.thxNo}</span>)}
-          </div>)}
         <button onClick={()=>goStation(S.id,"in")} className="min-h-[40px] text-[13px] font-bold text-slate-600 underline underline-offset-2"><Ic n="info"/>{t.view}</button>
         {simAvail && <button onClick={()=>setCd(!cd)} className={"w-full min-h-[40px] rounded-xl text-xs font-bold "+(cd?"bg-slate-100 text-slate-600":"bg-red-50 text-red-600")}><Ic n={cd?"reset":"bell"}/>{cd?t.reset:t.simLift}</button>}
       </>)});
