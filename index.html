@@ -927,7 +927,7 @@ const WEEKEND=[
   x:{EN:"Live music, fresh cider, lawn games and crafts",KO:"라이브 음악, 사과 착즙 체험, 잔디밭 게임, 만들기",ES:"Música en vivo, sidra, juegos al aire libre y manualidades",ZH:"现场音乐、现压苹果汁、草坪游戏和手工",RU:"Живая музыка, свежий сидр, игры на лужайке и поделки",BN:"লাইভ গান, আপেল সাইডার, লনের খেলা ও হাতের কাজ",FR:"Musique live, cidre pressé sur place, jeux de pelouse et bricolage"}},
  {t:{EN:"Lenfest Kids: Arco"},v:"Lenfest Center for the Arts",a:"615 W 129th St, New York, NY 10027",d:"2026-10-17",tm:"12–2:30 PM",free:true,ag:"2–12",reg:true,u:"https://sproutnyc.com/event/bc54f3de-ee27-4cd3-873d-733eda574772-lenfest-kids-arco",b:"M",
   x:{EN:"Kids' time-travel adventure show",KO:"시간 여행 어린이 공연",ES:"Espectáculo infantil de viajes en el tiempo",ZH:"儿童时空旅行演出",RU:"Детское шоу о путешествии во времени",BN:"শিশুদের সময়-ভ্রমণ শো",FR:"Spectacle pour enfants sur le voyage dans le temps"}}];
-const WKD={EN:{ag:"Ages {r}",rg:"Register in advance",w:"This weekend",c:"Coming up",f:"Free",g:"Directions",i:"Details",l:"en-US"},KO:{ag:"{r}세",rg:"사전 등록 필요",w:"이번 주말",c:"곧 있을 행사",f:"무료",g:"길 안내",i:"자세히",l:"ko"},ES:{ag:"{r} años",rg:"Registro previo",w:"Este fin de semana",c:"Próximamente",f:"Gratis",g:"Cómo llegar",i:"Detalles",l:"es"},ZH:{ag:"{r}岁",rg:"需提前报名",w:"本周末",c:"即将举行",f:"免费",g:"路线",i:"详情",l:"zh"},RU:{ag:"{r} лет",rg:"Нужна регистрация заранее",w:"В эти выходные",c:"Скоро",f:"Бесплатно",g:"Маршрут",i:"Подробнее",l:"ru"},BN:{ag:"{r} বছর",rg:"আগে নিবন্ধন করুন",w:"এই সপ্তাহান্তে",c:"আসছে",f:"বিনামূল্যে",g:"রুট",i:"বিস্তারিত",l:"bn"},FR:{ag:"{r} ans",rg:"Inscription à l'avance",w:"Ce week-end",c:"À venir",f:"Gratuit",g:"Itinéraire",i:"Détails",l:"fr"}};
+const WKD={EN:{u:"Upcoming kid-friendly events",ag:"Ages {r}",rg:"Register in advance",w:"This weekend",c:"Coming up",f:"Free",g:"Directions",i:"Details",l:"en-US"},KO:{u:"다가오는 아이 동반 행사",ag:"{r}세",rg:"사전 등록 필요",w:"이번 주말",c:"곧 있을 행사",f:"무료",g:"길 안내",i:"자세히",l:"ko"},ES:{u:"Próximos eventos para niños",ag:"{r} años",rg:"Registro previo",w:"Este fin de semana",c:"Próximamente",f:"Gratis",g:"Cómo llegar",i:"Detalles",l:"es"},ZH:{u:"近期亲子活动",ag:"{r}岁",rg:"需提前报名",w:"本周末",c:"即将举行",f:"免费",g:"路线",i:"详情",l:"zh"},RU:{u:"Ближайшие события для детей",ag:"{r} лет",rg:"Нужна регистрация заранее",w:"В эти выходные",c:"Скоро",f:"Бесплатно",g:"Маршрут",i:"Подробнее",l:"ru"},BN:{u:"আসন্ন শিশুবান্ধব ইভেন্ট",ag:"{r} বছর",rg:"আগে নিবন্ধন করুন",w:"এই সপ্তাহান্তে",c:"আসছে",f:"বিনামূল্যে",g:"রুট",i:"বিস্তারিত",l:"bn"},FR:{u:"Événements à venir pour les enfants",ag:"{r} ans",rg:"Inscription à l'avance",w:"Ce week-end",c:"À venir",f:"Gratuit",g:"Itinéraire",i:"Détails",l:"fr"}};
 function WeekendPicks({lang,onPick,ver}){
   const L=String(lang).toUpperCase(), d=WKD[L]||WKD.EN;
   const now=new Date(); const t0=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
@@ -935,11 +935,12 @@ function WeekendPicks({lang,onPick,ver}){
   const items=WEEKEND.map(w=>{ const p=w.d.split("-"); const dt=new Date(+p[0],+p[1]-1,+p[2]); const diff=Math.round((dt.getTime()-t0)/864e5);
     const wd=dt.getDay(); return {w,dt,diff,wk:mon(dt)===mon(t0)&&(wd===5||wd===6||wd===0)}; }).filter(x=>x.diff>=0&&x.diff<=10).sort((a,b)=>a.dt-b.dt);
   if(!items.length) return null;
-  const title=items.some(x=>x.wk)?d.w:d.c;
+  const title=d.u;
   return (<section className="bg-white rounded-3xl shadow-md p-4 space-y-3">
     <h2 className="text-[14px] font-extrabold text-slate-800">{title}</h2>
+    <div style={{display:"flex",gap:8,overflowX:"auto",margin:"0 -16px",padding:"0 16px 4px"}}>
     {items.map(({w,dt})=>{ const pl=PLACES.find(x=>x.name===w.v); const day=dt.toLocaleDateString(d.l,{weekday:"short"}); const md=dt.toLocaleDateString(d.l,{month:"short",day:"numeric"});
-      return (<div key={w.t.EN+w.d} style={{display:"flex",gap:12,alignItems:"stretch",border:"1px solid #e2e8f0",borderRadius:16,background:"#f8fafc",padding:12}}>
+      return (<div key={w.t.EN+w.d} style={{display:"flex",gap:12,alignItems:"stretch",border:"1px solid #e2e8f0",borderRadius:16,background:"#f8fafc",padding:12,flex:items.length>1?"0 0 285px":"1 1 100%",boxSizing:"border-box"}}>
         <div style={{width:54,flexShrink:0,borderRadius:12,background:"#ecfdf5",color:"#047857",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",lineHeight:1.15}}><span style={{fontSize:11,fontWeight:700,textTransform:"uppercase"}}>{day}</span><span style={{fontSize:13,fontWeight:800}}>{md}</span></div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:14,fontWeight:800,color:"#0f172a",lineHeight:1.25}}>{w.t[L]||w.t.EN}</div>
@@ -953,6 +954,7 @@ function WeekendPicks({lang,onPick,ver}){
           </div>
         </div>
       </div>); })}
+    </div>
   </section>);
 }
 const PCW={EN:["Photo credits","Edited (resized, cropped)"],KO:["사진 출처","수정됨 (크기 조정·자르기)"],ES:["Créditos de fotos","Editada (tamaño, recorte)"],ZH:["图片来源","已编辑（缩放、裁剪）"],RU:["Источники фото","Изменено (размер, обрезка)"],BN:["ছবির সূত্র","সম্পাদিত (আকার, ক্রপ)"],FR:["Crédits photos","Modifiée (taille, recadrage)"]};
@@ -1450,8 +1452,8 @@ function App(){
                   <span className="flex items-center gap-2 text-[13px] font-semibold text-slate-700"><span className="text-emerald-700"><Ic n="pin" m=""/></span>{q.t}</span>
                   <button onClick={askLoc} className="shrink-0 min-h-[40px] px-4 rounded-xl bg-emerald-600 text-white text-[13px] font-bold">{q.b}</button>
                 </div>); })()}
-              {landing && !ov && <WeekendPicks lang={lang} onPick={pick} ver={indVer}/>}
               {landing && !ov && <FamilyPicks lang={lang} onPick={pick} me={origin0} ver={indVer}/>}
+              {landing && !ov && <WeekendPicks lang={lang} onPick={pick} ver={indVer}/>}
               {landing && !ov && <p style={{fontSize:11,lineHeight:1.5,color:"#94a3b8",textAlign:"center",padding:"4px 16px 16px"}}>{DSC[String(lang).toUpperCase()]||DSC.EN}</p>}
               {landing && origin0 && <NearestCard t={t} lang={lang} me={origin0}/>}
               {route && <>
