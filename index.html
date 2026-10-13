@@ -20,6 +20,8 @@ tailwind.config={theme:{extend:{
  boxShadow:{sm:'0 1px 2px rgba(23,33,27,.05)',md:'0 1px 2px rgba(23,33,27,.04), 0 8px 24px rgba(23,33,27,.07)',lg:'0 2px 4px rgba(23,33,27,.05), 0 14px 32px rgba(23,33,27,.10)',xl:'0 4px 8px rgba(23,33,27,.06), 0 20px 40px rgba(23,33,27,.12)'}
 }}};
 </script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -501,6 +503,7 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin,cur0,o
       entDone=true;
       const sw=startWalk(route,origin);
       items.push({key:"ent",geo:near.ll?{ll:near.ll,r:50}:null,title:t.go(corner),time:t.mn(sw?sw.min:st.m),body:(<>
+        <WalkMap from={origin&&Number.isFinite(origin[0])?origin:null} to={near.ll||S.pos||S.gpos||null} label={near.ll?near.s:S.name}/>
         {near.photo && (
           <div className="relative rounded-xl overflow-hidden">
             <img src={near.photo} alt={near.s} className="w-full h-44 object-cover"/>
@@ -1043,6 +1046,34 @@ function MapSheet({pl,lang,onClose}){
     </div>);
 }
 const LNW={EN:"line",KO:"선",ES:"línea",ZH:"线",RU:"линия",BN:"লাইন",FR:"ligne"};
+function WalkMap({from,to,label}){
+  const ref=useRef(null);
+  const fk=from?from.join(","):"", tk=to?to.join(","):"";
+  useEffect(()=>{
+    const L=window.L; if(!L||!ref.current||!to) return;
+    const mob=!!(L.Browser&&L.Browser.mobile);
+    const map=L.map(ref.current,{zoomControl:false,scrollWheelZoom:false,tap:false,dragging:!mob,touchZoom:!mob,doubleClickZoom:false,boxZoom:false,keyboard:false});
+    map.attributionControl.setPrefix(false);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(map);
+    const icon=L.divIcon({className:"",html:'<div style="width:30px;height:30px;border-radius:15px;background:#059669;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);color:#fff;font:800 14px/24px Figtree,sans-serif;text-align:center">S</div>',iconSize:[30,30],iconAnchor:[15,15]});
+    const dm=L.marker(to,{icon}).addTo(map);
+    if(label) dm.bindTooltip(label,{permanent:true,direction:"top",offset:[0,-14]});
+    let alive=true, ctl=null;
+    if(from){
+      L.circleMarker(from,{radius:8,color:"#fff",weight:3,fillColor:"#2563eb",fillOpacity:1}).addTo(map);
+      const b=L.latLngBounds([from,to]); map.fitBounds(b,{padding:[36,36],maxZoom:17});
+      let line=L.polyline([from,to],{color:"#2563eb",weight:4,dashArray:"2 8",lineCap:"round"}).addTo(map);
+      try{
+        ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),5000);
+        fetch("https://routing.openstreetmap.de/routed-foot/route/v1/foot/"+from[1]+","+from[0]+";"+to[1]+","+to[0]+"?overview=full&geometries=geojson",{signal:ctl.signal})
+          .then(r=>r.json()).then(j=>{ clearTimeout(tm); const c=j&&j.routes&&j.routes[0]&&j.routes[0].geometry&&j.routes[0].geometry.coordinates; if(!alive||!c||c.length<2) return; map.removeLayer(line); line=L.polyline(c.map(q=>[q[1],q[0]]),{color:"#2563eb",weight:5,opacity:.9}).addTo(map); map.fitBounds(line.getBounds().extend(b),{padding:[36,36],maxZoom:17}); }).catch(()=>{});
+      }catch(e){}
+    } else map.setView(to,17);
+    return ()=>{ alive=false; try{ctl&&ctl.abort();}catch(e){} map.remove(); };
+  },[fk,tk]);
+  if(!to||typeof window==="undefined"||!window.L) return null;
+  return <div ref={ref} style={{height:210,borderRadius:14,overflow:"hidden",position:"relative",zIndex:0,isolation:"isolate",background:"#e2e8f0"}}></div>;
+}
 function SegBar({route,t,origin,lang}){
   const sw=startWalk(route,origin), lw=LNW[String(lang).toUpperCase()]||LNW.EN;
   const first=route.steps.find(x=>x.k==="walk"&&x.st&&!x.end);
