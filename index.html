@@ -291,8 +291,10 @@ const PLACES = [
 ];
 let FOCUS=null; const GEOP={};
 const GEOURL="https://geosearch.planninglabs.nyc/v2/autocomplete";
-const geoSearch=async q=>{
-  if(q.trim().length<3) return [];
+const PHURL="https://photon.komoot.io/api/";
+const CNTY={"kings county":"Brooklyn","new york county":"Manhattan","queens county":"Queens","bronx county":"Bronx","richmond county":"Staten Island"};
+const geoCap=z=>z===z.toUpperCase()?z.toLowerCase().replace(/(^|[\s\-\/(])([a-z])/g,(m,a,b)=>a+b.toUpperCase()):z;
+const geoPlan=async q=>{
   try{
     const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),4000);
     const u=GEOURL+"?size=10&text="+encodeURIComponent(q.trim())+(FOCUS?"&focus.point.lat="+FOCUS[0]+"&focus.point.lon="+FOCUS[1]:"");
@@ -301,14 +303,38 @@ const geoSearch=async q=>{
     const j=await r.json();
     return (j.features||[]).filter(f=>f&&f.geometry&&f.geometry.coordinates&&f.properties).map(f=>{
       const pr=f.properties, ll=[f.geometry.coordinates[1],f.geometry.coordinates[0]];
-      const tc=z=>z===z.toUpperCase()?z.toLowerCase().replace(/(^|[\s\-\/(])([a-z])/g,(m,a,b)=>a+b.toUpperCase()):z;
+      const tc=geoCap;
       const nm=tc((pr.name||String(pr.label||"").split(",")[0]).trim());
       const bo=pr.borough||pr.county||"";
       const name=bo?nm+", "+bo:nm;
-      const x={name,addr:(()=>{ const st=pr.street?tc((pr.housenumber?pr.housenumber+" ":"")+pr.street):""; return (st&&st.toLowerCase()!==nm.toLowerCase()?st+", ":"")+(bo?bo+", NY":"New York, NY"); })(),c:"pin",ll,geo:true,title:nm};
-      GEOP[name.toLowerCase()]=x; return x;
+      return {name,addr:(()=>{ const st=pr.street?tc((pr.housenumber?pr.housenumber+" ":"")+pr.street):""; return (st&&st.toLowerCase()!==nm.toLowerCase()?st+", ":"")+(bo?bo+", NY":"New York, NY"); })(),c:"pin",ll,geo:true,title:nm};
     }).filter(x=>x.ll.every(Number.isFinite));
   }catch(e){ return []; }
+};
+// Businesses / shops / parks (OpenStreetMap via Photon) — the NYC address geocoder above doesn't know them
+const geoPoi=async q=>{
+  try{
+    const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),4000);
+    const u=PHURL+"?limit=8&lang=en&bbox=-74.30,40.45,-73.65,40.95&q="+encodeURIComponent(q.trim())+(FOCUS?"&lat="+FOCUS[0]+"&lon="+FOCUS[1]:"");
+    const r=await fetch(u,{signal:ctl.signal}); clearTimeout(tm);
+    if(!r.ok) return [];
+    const j=await r.json();
+    return (j.features||[]).filter(f=>f&&f.geometry&&f.geometry.coordinates&&f.properties&&f.properties.name).map(f=>{
+      const pr=f.properties, ll=[f.geometry.coordinates[1],f.geometry.coordinates[0]];
+      const bo=CNTY[String(pr.county||"").toLowerCase()];
+      if(!bo) return null;
+      const nm=String(pr.name).trim();
+      const st=pr.street?((pr.housenumber?pr.housenumber+" ":"")+pr.street):"";
+      return {name:nm+", "+(st?st+", ":"")+bo,addr:(st?st+", ":"")+(pr.district&&pr.district!==bo?pr.district+", ":"")+bo+", NY",c:"pin",ll,geo:true,title:nm};
+    }).filter(x=>x&&x.ll.every(Number.isFinite));
+  }catch(e){ return []; }
+};
+const geoSearch=async q=>{
+  if(q.trim().length<3) return [];
+  const [a,b]=await Promise.all([geoPlan(q),geoPoi(q)]);
+  const seen=new Set(), out=[];
+  (/^\d/.test(q.trim())?[...a,...b]:[...b,...a]).forEach(x=>{ const k=x.name.toLowerCase(); if(seen.has(k)) return; seen.add(k); GEOP[k]=x; out.push(x); });
+  return out;
 };
 const searchPlaces = async (q) => {
   const k = q.trim().toLowerCase();
@@ -990,6 +1016,7 @@ const PCW={EN:["Photo credits","Edited (resized, cropped)"],KO:["사진 출처",
 const PRV={EN:"This elevator is run by Barclays Center, not the MTA, so it may not show in MTA outage alerts. Check hours on site.",KO:"이 엘리베이터는 MTA가 아니라 Barclays Center가 관리해서 MTA 고장 알림에 안 나올 수 있어요. 운영 시간은 현장에서 확인하세요.",ES:"Este ascensor lo opera Barclays Center, no la MTA, así que puede no aparecer en los avisos de averías de la MTA. Confirma el horario en el lugar.",ZH:"此电梯由 Barclays Center 而非 MTA 管理，可能不会出现在 MTA 的故障通知中。请到现场确认运行时间。",RU:"Этот лифт принадлежит Barclays Center, а не MTA, поэтому его может не быть в уведомлениях MTA о неисправностях. Проверьте часы работы на месте.",BN:"এই লিফটটি MTA নয়, Barclays Center পরিচালনা করে, তাই MTA-র বিকল হওয়ার সতর্কতায় নাও দেখা যেতে পারে। সময় সাইটে গিয়ে দেখে নিন।",FR:"Cet ascenseur est géré par Barclays Center, pas par la MTA : il peut ne pas apparaître dans les alertes de panne de la MTA. Vérifiez les horaires sur place."};
 const PRL={EN:"These elevators are run by the LIRR (Atlantic Terminal), not the subway, so they may not always show in MTA outage alerts. If one is out, use the one next to it.",KO:"이 엘리베이터는 지하철이 아니라 LIRR(Atlantic Terminal)이 관리해서 MTA 고장 알림에 항상 나오지는 않을 수 있어요. 하나가 고장이면 바로 옆 엘리베이터를 이용하세요.",ES:"Estos ascensores los opera el LIRR (Atlantic Terminal), no el metro, así que pueden no aparecer siempre en los avisos de averías de la MTA. Si uno no funciona, usa el de al lado.",ZH:"这些电梯由 LIRR（Atlantic Terminal）而非地铁管理，可能不会总出现在 MTA 的故障通知中。若其中一部停用，请使用旁边的那部。",RU:"Эти лифты принадлежат LIRR (Atlantic Terminal), а не метро, поэтому их может не быть в уведомлениях MTA о неисправностях. Если один не работает, используйте соседний.",BN:"এই লিফটগুলো সাবওয়ে নয়, LIRR (Atlantic Terminal) পরিচালনা করে, তাই MTA-র বিকল হওয়ার সতর্কতায় সবসময় নাও দেখা যেতে পারে। একটি বন্ধ থাকলে পাশেরটি ব্যবহার করুন।",FR:"Ces ascenseurs sont gérés par le LIRR (Atlantic Terminal), pas par le métro : ils peuvent ne pas toujours apparaître dans les alertes de panne de la MTA. Si l'un est en panne, utilisez celui d'à côté."};
 const PrivNote=({e,lang})=>{ if(!e.priv) return null; const D=e.priv==="LIRR"?PRL:PRV; return <p className="text-[12px] text-amber-900 bg-amber-50 rounded-lg px-2.5 py-1.5 leading-snug"><Ic n="info"/>{D[String(lang).toUpperCase()]||D.EN}</p>; };
+const OSMC={EN:"Search & map data",KO:"검색·지도 데이터",ES:"Datos de búsqueda y mapa",ZH:"搜索和地图数据",RU:"Данные поиска и карты",BN:"অনুসন্ধান ও মানচিত্র তথ্য",FR:"Données de recherche et de carte"};
 const DSC={EN:"Elevator status comes from the MTA and can change at any time. Please check signs on site.",KO:"엘리베이터 상태는 MTA 정보이며 언제든 바뀔 수 있어요. 현장 안내판도 꼭 확인해 주세요.",ES:"El estado de los ascensores viene de la MTA y puede cambiar en cualquier momento. Revisa las señales en la estación.",ZH:"电梯状态来自 MTA，可能随时变化。请以现场标识为准。",RU:"Состояние лифтов берётся из данных MTA и может измениться в любой момент. Проверяйте указатели на станции.",BN:"লিফটের অবস্থা MTA থেকে নেওয়া এবং যেকোনো সময় বদলাতে পারে। স্টেশনের সাইন দেখে নিন।",FR:"L'état des ascenseurs provient de la MTA et peut changer à tout moment. Vérifiez les panneaux sur place."};
 const FEEDBACK_URL=""; // paste your Google Form link here, e.g. "https://forms.gle/xxxx"
 const FBK={EN:"Send feedback",KO:"의견 보내기",ES:"Enviar comentarios",ZH:"发送反馈",RU:"Отправить отзыв",BN:"মতামত পাঠান",FR:"Envoyer un avis"};
@@ -1532,6 +1559,7 @@ function App(){
               {landing && !ov && <WeekendPicks lang={lang} onPick={pick} ver={indVer}/>}
               {landing && !ov && <p style={{fontSize:11,lineHeight:1.5,color:"#94a3b8",textAlign:"center",padding:"4px 16px 16px"}}>{DSC[String(lang).toUpperCase()]||DSC.EN}</p>}
               {landing && !ov && <FeedbackLink lang={lang} center/>}
+              {landing && !ov && <p style={{fontSize:11,color:"#cbd5e1",textAlign:"center",padding:"0 16px 12px"}}>{OSMC[String(lang).toUpperCase()]||OSMC.EN} <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" style={{textDecoration:"underline"}}>© OpenStreetMap contributors</a></p>}
               {landing && origin0 && <NearestCard t={t} lang={lang} me={origin0}/>}
               {route && <>
               {SHOW_SPONSOR && dd && dd.sp && !adHidden && (
