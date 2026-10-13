@@ -321,12 +321,15 @@ const geoPoi=async q=>{
     const j=await r.json();
     return (j.features||[]).filter(f=>f&&f.geometry&&f.geometry.coordinates&&f.properties&&f.properties.name).map(f=>{
       const pr=f.properties, ll=[f.geometry.coordinates[1],f.geometry.coordinates[0]];
-      const bo=CNTY[String(pr.county||"").toLowerCase()];
-      if(!bo) return null;
+      const BOR=["Brooklyn","Manhattan","Queens","Bronx","Staten Island"];
+      let bo=CNTY[String(pr.county||"").toLowerCase()];
+      if(!bo) bo=BOR.find(b=>[pr.district,pr.locality,pr.city,pr.county].some(v=>String(v||"").toLowerCase()===b.toLowerCase()||String(v||"").toLowerCase()===b.toLowerCase()+" county"));
+      if(!bo && /new york/i.test(String(pr.state||"New York")) && !/new jersey|connecticut/i.test(String(pr.state||""))) bo="New York";
+      if(!bo || (pr.state && !/new york/i.test(pr.state))) return null;
       const nm=String(pr.name).trim();
       const st=pr.street?((pr.housenumber?pr.housenumber+" ":"")+pr.street):"";
       return {name:nm+", "+(st?st+", ":"")+bo,addr:(st?st+", ":"")+(pr.district&&pr.district!==bo?pr.district+", ":"")+bo+", NY",c:"pin",ll,geo:true,title:nm};
-    }).filter(x=>x&&x.ll.every(Number.isFinite));
+    }).filter(x=>x&&x.ll.every(Number.isFinite)&&x.ll[0]>40.45&&x.ll[0]<40.95&&x.ll[1]>-74.30&&x.ll[1]<-73.65);
   }catch(e){ return []; }
 };
 const geoSearch=async q=>{
