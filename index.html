@@ -1047,21 +1047,21 @@ function MapSheet({pl,lang,onClose}){
 }
 const LNW={EN:"line",KO:"선",ES:"línea",ZH:"线",RU:"линия",BN:"লাইন",FR:"ligne"};
 function WalkMap({from,to,label}){
-  const ref=useRef(null);
+  const ref=useRef(null), mapR=useRef(null), orgR=useRef(null), boundsR=useRef(null);
   const fk=from?from.join(","):"", tk=to?to.join(","):"";
   useEffect(()=>{
     const L=window.L; if(!L||!ref.current||!to) return;
     const mob=!!(L.Browser&&L.Browser.mobile);
     const map=L.map(ref.current,{zoomControl:false,scrollWheelZoom:false,tap:false,dragging:!mob,touchZoom:!mob,doubleClickZoom:false,boxZoom:false,keyboard:false});
-    map.attributionControl.setPrefix(false);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:20,maxNativeZoom:19,detectRetina:true,attribution:"© OpenStreetMap contributors"}).addTo(map);
+    map.attributionControl.setPrefix(false); mapR.current=map; orgR.current=null; boundsR.current=null;
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{subdomains:"abcd",maxZoom:20,attribution:"© OpenStreetMap contributors © CARTO"}).addTo(map);
     const icon=L.divIcon({className:"",html:'<div style="width:30px;height:30px;border-radius:15px;background:#059669;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);color:#fff;font:800 14px/24px Figtree,sans-serif;text-align:center">S</div>',iconSize:[30,30],iconAnchor:[15,15]});
     const dm=L.marker(to,{icon}).addTo(map);
     if(label) dm.bindTooltip(label,{permanent:true,direction:"top",offset:[0,-14]});
     let alive=true, ctl=null;
     if(from){
-      L.circleMarker(from,{radius:8,color:"#fff",weight:3,fillColor:"#2563eb",fillOpacity:1}).addTo(map);
-      const b=L.latLngBounds([from,to]); map.fitBounds(b,{padding:[36,36],maxZoom:17});
+      orgR.current=L.circleMarker(from,{radius:8,color:"#fff",weight:3,fillColor:"#2563eb",fillOpacity:1}).addTo(map);
+      const b=L.latLngBounds([from,to]); boundsR.current=b; map.fitBounds(b,{padding:[36,36],maxZoom:17});
       let line=L.polyline([from,to],{color:"#2563eb",weight:4,dashArray:"2 8",lineCap:"round"}).addTo(map);
       try{
         ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),5000);
@@ -1069,7 +1069,22 @@ function WalkMap({from,to,label}){
           .then(r=>r.json()).then(j=>{ clearTimeout(tm); const c=j&&j.routes&&j.routes[0]&&j.routes[0].geometry&&j.routes[0].geometry.coordinates; if(!alive||!c||c.length<2) return; map.removeLayer(line); line=L.polyline(c.map(q=>[q[1],q[0]]),{color:"#2563eb",weight:5,opacity:.9}).addTo(map); map.fitBounds(line.getBounds().extend(b),{padding:[36,36],maxZoom:17}); }).catch(()=>{});
       }catch(e){}
     } else map.setView(to,17);
-    return ()=>{ alive=false; try{ctl&&ctl.abort();}catch(e){} map.remove(); };
+    return ()=>{ alive=false; try{ctl&&ctl.abort();}catch(e){} mapR.current=null; map.remove(); };
+  },[fk,tk]);
+  useEffect(()=>{
+    const L=window.L; if(!L||!to||!navigator.geolocation) return;
+    let dot=null, acc=null, first=true, id=null;
+    try{ id=navigator.geolocation.watchPosition(p=>{
+      const map=mapR.current; if(!map) return;
+      const ll=[p.coords.latitude,p.coords.longitude];
+      if(!dot){
+        if(orgR.current){ try{map.removeLayer(orgR.current);}catch(e){} orgR.current=null; }
+        acc=L.circle(ll,{radius:Math.min(p.coords.accuracy||30,150),color:"#2563eb",weight:1,fillColor:"#2563eb",fillOpacity:.12}).addTo(map);
+        dot=L.circleMarker(ll,{radius:8,color:"#fff",weight:3,fillColor:"#2563eb",fillOpacity:1}).addTo(map);
+        if(first){ first=false; try{ const b=(boundsR.current||L.latLngBounds([to,to])).extend(ll).extend(to); map.fitBounds(b,{padding:[36,36],maxZoom:17}); }catch(e){} }
+      } else { dot.setLatLng(ll); acc.setLatLng(ll); acc.setRadius(Math.min(p.coords.accuracy||30,150)); }
+    },()=>{},{enableHighAccuracy:true,maximumAge:3000,timeout:20000}); }catch(e){}
+    return ()=>{ try{ id!=null&&navigator.geolocation.clearWatch(id); }catch(e){} };
   },[fk,tk]);
   if(!to||typeof window==="undefined"||!window.L) return null;
   return <div ref={ref} style={{height:210,borderRadius:14,overflow:"hidden",position:"relative",zIndex:0,isolation:"isolate",background:"#e2e8f0"}}></div>;
