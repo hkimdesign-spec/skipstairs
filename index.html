@@ -438,36 +438,13 @@ const GEO={
   fr:{auto:d=>"Suivi de votre position · à "+d+". Cette étape se termine toute seule à l'arrivée.",manual:"Sous terre, le GPS ne fonctionne pas. Touchez quand vous avez terminé cette étape.",use:"Utiliser ma position",sim:"Simuler l'arrivée",hint:"Facultatif : nous suggérons l'étape suivante quand vous êtes près de l'ascenseur.",wait:"Recherche de votre position…",away:m=>"À environ "+m+" m de l'ascenseur.",denied:"Position indisponible. Utilisez le bouton ci-dessous.",near:"Vous êtes à l'ascenseur.",yes:"Oui, j'y suis — étape suivante"}
 };
 const BKS={EN:"← Previous step",KO:"← 이전 단계",ES:"← Paso anterior",ZH:"← 上一步",RU:"← Предыдущий шаг",BN:"← আগের ধাপ",FR:"← Étape précédente"};
-const LVM={EN:["Elevator levels","Numbers match Elevator 1, 2… below"],KO:["엘리베이터 층 안내","번호는 아래 엘리베이터 번호와 같아요"],ES:["Niveles y ascensores","Los números coinciden con Ascensor 1, 2… de abajo"],ZH:["电梯楼层示意","数字对应下方的电梯 1、2…"],RU:["Уровни и лифты","Номера соответствуют лифтам 1, 2… ниже"],BN:["লিফট ও স্তর","সংখ্যাগুলো নিচের লিফট ১, ২… এর সাথে মেলে"],FR:["Niveaux et ascenseurs","Les numéros correspondent aux ascenseurs 1, 2… ci-dessous"]};
-function LevelMap({chain,t,lang}){
-  const [open,setOpen]=useState(true);
+const ELN={EN:n=>n+(n===1?" elevator":" elevators"),KO:n=>"엘리베이터 "+n+"대",ES:n=>n+(n===1?" ascensor":" ascensores"),ZH:n=>n+" 部电梯",RU:n=>n+(n===1?" лифт":n<5?" лифта":" лифтов"),BN:n=>n+"টি লিফট",FR:n=>n+(n===1?" ascenseur":" ascenseurs")};
+function LevelChip({chain,t,lang}){
   const cs=(chain||[]).filter(c=>c&&c.f&&c.t&&c.f!==c.t);
-  const order=["street","mezz","plat"];
-  const lv=order.filter(l=>cs.some(c=>c.f===l||c.t===l));
-  if(lv.length<2||!cs.length) return null;
-  const L=LVM[String(lang).toUpperCase()]||LVM.EN, n=cs.length;
-  const W=340, y=l=>40+lv.indexOf(l)*76, H=40+(lv.length-1)*76+44;
-  const xs=i=>n===1?190:122+i*((W-122-34)/(n-1));
-  const ids=c=>{ const a=c.opts?c.opts.map(o=>typeof o==="string"?(o.match(/EL\d+X?/)||[])[0]:o.el):[(String(c.note||"").replace(/EL\s(\d)/g,"EL$1").match(/EL\d+X?/)||[])[0]]; return a.filter(Boolean); };
-  return (
-    <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:20,padding:"12px 12px 8px",marginBottom:12}}>
-      <button onClick={()=>setOpen(!open)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",minHeight:36,background:"none",border:0,padding:"0 4px",textAlign:"left"}}>
-        <span><span style={{fontSize:14,fontWeight:800,color:"#0f172a"}}>{L[0]}</span><span style={{display:"block",fontSize:12,color:"#64748b"}}>{L[1]}</span></span>
-        <span style={{fontSize:12,fontWeight:700,color:"#64748b"}}>{open?"▲":"▼"}</span>
-      </button>
-      {open && <svg viewBox={"0 0 "+W+" "+H} style={{width:"100%",height:"auto",display:"block",marginTop:4}} role="img" aria-label={L[0]}>
-        {lv.map(l=>(<g key={l}><text x="8" y={y(l)-8} style={{fontSize:12,fontWeight:700,fill:"#475569"}}>{t.lvl[l]}</text><rect x="8" y={y(l)} width={W-16} height="6" rx="3" fill="#cbd5e1"/></g>))}
-        {cs.slice(0,-1).map((c,i)=>{ const nx=cs[i+1]; if(c.t!==nx.f) return null; return <line key={"d"+i} x1={xs(i)+12} y1={y(c.t)+3} x2={xs(i+1)-12} y2={y(c.t)+3} stroke="#64748b" strokeWidth="2.5" strokeDasharray="2 5" strokeLinecap="round"/>; })}
-        {cs.map((c,i)=>{ const yf=y(c.f), yt=y(c.t), top=Math.min(yf,yt), bot=Math.max(yf,yt), x=xs(i), id=ids(c), down=id.length>0&&id.every(k=>!!LIVE[k]), up=yt<yf;
-          return (<g key={i}>
-            <rect x={x-12} y={top+6} width="24" height={bot-top-6} rx="4" fill={down?"#fee2e2":"#d1fae5"} stroke={down?"#dc2626":"#059669"} strokeWidth="2"/>
-            <path d={up?"M"+(x-6)+","+(top+26)+" L"+x+","+(top+16)+" L"+(x+6)+","+(top+26):"M"+(x-6)+","+(bot-10)+" L"+x+","+(bot)+" L"+(x+6)+","+(bot-10)} fill="none" stroke={down?"#dc2626":"#059669"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <circle cx={x} cy={(top+bot)/2+3} r="11" fill="#0f172a"/>
-            <text x={x} y={(top+bot)/2+8} textAnchor="middle" style={{fontSize:13,fontWeight:800,fill:"#fff"}}>{i+1}</text>
-            {n<=3 && id.length>0 && <text x={x} y={bot+24} textAnchor="middle" style={{fontSize:12,fontWeight:700,fill:down?"#b91c1c":"#334155"}}>{id.slice(0,2).join(" / ")}</text>}
-          </g>); })}
-      </svg>}
-    </div>);
+  if(!cs.length) return null;
+  const path=[cs[0].f]; cs.forEach(c=>{ if(path[path.length-1]!==c.t) path.push(c.t); });
+  const f=ELN[String(lang).toUpperCase()]||ELN.EN;
+  return (<div style={{display:"inline-flex",alignItems:"center",gap:6,background:"#f1f5f9",borderRadius:999,padding:"5px 12px",marginBottom:12,fontSize:12,fontWeight:700,color:"#475569",flexWrap:"wrap"}}><span>{path.map(l=>t.lvl[l]).join(" → ")}</span><span style={{color:"#94a3b8"}}>·</span><span>{f(cs.length)}</span></div>);
 }
 function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin,cur0,onProg,dest}){
   const rides=route.steps.filter(x=>x.k==="ride");
@@ -565,14 +542,14 @@ function FollowAlong({t,S,near:near0,lang,route,cd,setCd,goStation,origin,cur0,o
   return (
     <section className="bg-white rounded-3xl shadow-md p-4">
       {prog && (
-        <div className="sticky top-2 z-30 mb-3 rounded-2xl bg-slate-800 text-white px-3.5 py-2.5 shadow-lg">
+        <div className="sticky top-2 z-30 mb-3 rounded-xl px-3 py-1.5" style={{background:"rgba(255,255,255,.95)",border:"1px solid #e2e8f0",boxShadow:"0 1px 3px rgba(15,23,42,.08)"}}>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-[12px] font-bold text-amber-200 whitespace-nowrap">{fin?t.madeIt:t.stepOf(cur+1,N)}</span>
-            {!fin && <span className="text-[12px] truncate">{lab(items[cur])}</span>}
+            <span className="text-[12px] font-bold text-emerald-700 whitespace-nowrap">{fin?t.madeIt:t.stepOf(cur+1,N)}</span>
+            {!fin && <span className="text-[12px] text-slate-500 truncate">{lab(items[cur])}</span>}
           </div>
-          <div className="h-1.5 rounded-full bg-white/20 mt-1.5"><div className="h-1.5 rounded-full bg-amber-400" style={{width:Math.min(100,Math.round(cur/N*100))+"%",transition:"width .3s"}}></div></div>
+          <div className="rounded-full bg-slate-100 mt-1" style={{height:3}}><div className="rounded-full bg-emerald-500" style={{height:3,width:Math.min(100,Math.round(cur/N*100))+"%",transition:"width .3s"}}></div></div>
         </div>)}
-      <LevelMap chain={near.chain} t={t} lang={lang}/>
+      <LevelChip chain={near.chain} t={t} lang={lang}/>
       <ol>{items.map((it,i)=>{
         const state=!prog?undefined:(i<cur?"done":i===cur?"cur":"todo");
         return (
