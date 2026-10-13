@@ -1035,13 +1035,16 @@ function MapSheet({pl,lang,onClose}){
       </div>
     </div>);
 }
-function SegBar({route,t}){
-  const segs=route.steps.filter(x=>(x.k==="walk"||x.k==="ride"||x.k==="xf")&&x.m>0);
-  return (<div style={{display:"flex",gap:3,padding:"2px 2px 0"}}>{segs.map((x,i)=>{
-    const ride=x.k==="ride", bg=ride?(LINE_COLOR[x.l]||"#64748b"):x.k==="xf"?"#fde68a":"#e2e8f0";
+const SEGC={EN:"Numbers are minutes: walk · train · transfer",KO:"숫자는 분이에요: 걷기 · 열차 · 환승",ES:"Los números son minutos: caminar · tren · transbordo",ZH:"数字为分钟：步行 · 列车 · 换乘",RU:"Цифры — минуты: пешком · поезд · пересадка",BN:"সংখ্যা মানে মিনিট: হাঁটা · ট্রেন · বদল",FR:"Les nombres sont des minutes : marche · train · correspondance"};
+function SegBar({route,t,origin,lang}){
+  const sw=startWalk(route,origin);
+  const first=route.steps.find(x=>x.k==="walk"&&x.st&&!x.end);
+  const segs=route.steps.filter(x=>(x.k==="walk"||x.k==="ride"||x.k==="xf")&&x.m>0).map(x=>({...x,m:(x===first&&sw)?sw.min:x.m}));
+  return (<div style={{padding:"2px 2px 0"}}><div style={{display:"flex",gap:3}}>{segs.map((x,i)=>{
+    const ride=x.k==="ride", walk=x.k==="walk", bg=ride?(LINE_COLOR[x.l]||"#64748b"):x.k==="xf"?"#fde68a":"#e2e8f0";
     const fg=ride?(["N","Q","R","W"].includes(x.l)?"#000":"#fff"):x.k==="xf"?"#78350f":"#475569";
-    return (<div key={i} style={{flex:Math.max(x.m,4)+" 1 0",minWidth:34,height:28,borderRadius:14,background:bg,color:fg,fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:3,whiteSpace:"nowrap",overflow:"hidden"}}>{ride && <span>{x.l}</span>}<span>{x.m}{ride?"":""}</span></div>);
-  })}</div>);
+    return (<div key={i} style={{flex:Math.max(x.m,4)+" 1 0",minWidth:40,height:28,borderRadius:14,background:bg,color:fg,fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:3,whiteSpace:"nowrap",overflow:"hidden"}}>{ride && <span>{x.l}</span>}{walk && <Ic n="walk" m=""/>}{x.k==="xf" && <span>⇄</span>}<span>{x.m}</span></div>);
+  })}</div><div style={{fontSize:12,color:"#64748b",marginTop:4,padding:"0 4px"}}>{SEGC[String(lang).toUpperCase()]||SEGC.EN}</div></div>);
 }
 function ReportLink({lang,route}){ if(!FEEDBACK_URL) return null; const L=SEGW[String(lang).toUpperCase()]||SEGW.EN;
   const info=route?route.steps.map(x=>x.k+":"+(x.p||x.a||"")+(x.l?"("+x.l+")":"")).join(" > "):"";
@@ -1491,7 +1494,7 @@ function App(){
                     <div className="text-[12px] font-semibold text-emerald-50 mt-1">{t.xfer(route.steps.filter(x=>x.k==="xf").length)}</div><div className="text-[12px] font-bold text-white tabular-nums">{ARR[lang]} {rtEta(route,totalMinO(route,origin0),lang,twNow)}</div>
                   </div>
                 </div>)}
-              {route && <SegBar route={route} t={t}/>}
+              {route && <SegBar route={route} t={t} origin={origin0} lang={lang}/>}
               {route && route.blk && (()=>{ const bl=BLK[String(lang).toUpperCase()]||BLK.EN; return (<div className="flex items-start gap-2.5 rounded-2xl px-4 py-3 text-[13px] font-semibold bg-red-50 text-red-800 ring-1 ring-red-200"><span className="shrink-0 mt-0.5"><Ic n="alert" m=""/></span><span className="leading-snug">{bl.t(route.blk.join(", "))}</span></div>); })()}
               {route && (
                 <div className={"flex items-center gap-2.5 rounded-2xl px-4 py-3 text-[13px] font-semibold "+((route.warn||rr||routeOuts.length)?"bg-amber-50 text-amber-800":"bg-white border border-slate-200 text-slate-700")}>
