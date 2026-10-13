@@ -1054,7 +1054,7 @@ function WalkMap({from,to,label}){
     const mob=!!(L.Browser&&L.Browser.mobile);
     const map=L.map(ref.current,{zoomControl:false,scrollWheelZoom:false,tap:false,dragging:!mob,touchZoom:!mob,doubleClickZoom:false,boxZoom:false,keyboard:false});
     map.attributionControl.setPrefix(false);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(map);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:20,maxNativeZoom:19,detectRetina:true,attribution:"© OpenStreetMap contributors"}).addTo(map);
     const icon=L.divIcon({className:"",html:'<div style="width:30px;height:30px;border-radius:15px;background:#059669;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);color:#fff;font:800 14px/24px Figtree,sans-serif;text-align:center">S</div>',iconSize:[30,30],iconAnchor:[15,15]});
     const dm=L.marker(to,{icon}).addTo(map);
     if(label) dm.bindTooltip(label,{permanent:true,direction:"top",offset:[0,-14]});
